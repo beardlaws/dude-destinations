@@ -32,7 +32,7 @@ export default async function HomePage() {
         <VideoReviewsSection taverns={taverns} />
         <CategoriesSection taverns={taverns} />
         <SubmitSection />
-        <AboutSection />
+        <AboutSection totalStops={stats.totalStops} />
       </main>
 
       <SiteFooter />

@@ -2,7 +2,7 @@ import Image from "next/image";
 import { MapPin, Play } from "lucide-react";
 import Link from "next/link";
 
-export default function AboutSection() {
+export default function AboutSection({ totalStops }: { totalStops: number }) {
   return (
     <section id="about" className="py-16 lg:py-24 bg-dark-wood border-t border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,7 +21,7 @@ export default function AboutSection() {
             </div>
             {/* Floating badge */}
             <div className="absolute -bottom-4 -right-4 lg:-bottom-6 lg:-right-6 bg-amber text-darker-wood p-5 rounded-sm shadow-xl">
-              <div className="font-serif text-3xl font-black leading-none">27</div>
+              <div className="font-serif text-3xl font-black leading-none">{totalStops}</div>
               <div className="text-xs font-bold uppercase tracking-wider mt-1 leading-none">Stops</div>
               <div className="text-xs font-bold uppercase tracking-wider">Completed</div>
             </div>
