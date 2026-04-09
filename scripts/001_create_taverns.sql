@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.taverns (
   tags TEXT[] DEFAULT '{}',
   video_title TEXT,
   video_url TEXT,
-  video_platform TEXT DEFAULT 'youtube' CHECK (video_platform IN ('youtube', 'tiktok')),
+  video_platform TEXT DEFAULT 'youtube' CHECK (video_platform IN ('youtube', 'tiktok', 'facebook')),
   latitude DECIMAL(10, 6) NOT NULL,
   longitude DECIMAL(10, 6) NOT NULL,
   featured BOOLEAN DEFAULT false,
