@@ -9,8 +9,10 @@ interface FeaturedTavernsProps {
 }
 
 export default function FeaturedTaverns({ taverns, dudeApprovedCount }: FeaturedTavernsProps) {
-  // Get Dude Approved stops first
-  const dudeApproved = taverns.filter((t) => t.dude_approved);
+  // Get Dude Approved stops, sorted by most recent (highest stop_number first)
+  const dudeApproved = taverns
+    .filter((t) => t.dude_approved)
+    .sort((a, b) => (b.stop_number || 0) - (a.stop_number || 0));
   const displayTaverns = dudeApproved.slice(0, 6);
 
   return (

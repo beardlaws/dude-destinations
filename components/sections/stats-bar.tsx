@@ -36,7 +36,7 @@ export default function StatsBar({ stats: tavernStats }: StatsBarProps) {
       icon: Video,
       value: tavernStats.videoReviews.toString(),
       label: "Video Reviews",
-      sublabel: "on YouTube & TikTok",
+      sublabel: "on YouTube, TikTok & Facebook",
     },
     {
       icon: Route,

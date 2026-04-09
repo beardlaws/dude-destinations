@@ -18,7 +18,7 @@ export interface Tavern {
   tags: string[];
   video_title: string | null;
   video_url: string | null;
-  video_platform: "youtube" | "tiktok";
+  video_platform: "youtube" | "tiktok" | "facebook";
   latitude: number;
   longitude: number;
   featured: boolean;
@@ -44,7 +44,7 @@ export interface TavernInput {
   tags?: string[];
   video_title?: string;
   video_url?: string;
-  video_platform?: "youtube" | "tiktok";
+  video_platform?: "youtube" | "tiktok" | "facebook";
   latitude: number;
   longitude: number;
   featured?: boolean;
