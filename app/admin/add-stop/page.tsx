@@ -208,6 +208,9 @@ const [formData, setFormData] = useState<FormData>({
       if (formData.videoPlatform === "tiktok" && !formData.videoUrl.includes("tiktok.com")) {
         newErrors.videoUrl = "Must be a valid TikTok URL";
       }
+      if (formData.videoPlatform === "facebook" && !formData.videoUrl.includes("facebook.com") && !formData.videoUrl.includes("fb.watch")) {
+        newErrors.videoUrl = "Must be a valid Facebook URL";
+      }
     }
 
     if (formData.rating && (parseFloat(formData.rating) < 0 || parseFloat(formData.rating) > 5)) {
