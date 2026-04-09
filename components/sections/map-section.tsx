@@ -17,6 +17,7 @@ import {
   Compass,
   Navigation,
   Youtube,
+  Facebook,
   ChevronRight,
   Route,
   Settings,
@@ -727,20 +728,25 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
                   >
                     <Play className="w-5 h-5" />
                     <span>Watch the Review</span>
-                    {/* Platform badge */}
-                    <span className="ml-auto flex items-center gap-1.5 px-2 py-0.5 bg-darker-wood/20 rounded-sm">
-                      {activeTavern.video_url.includes("tiktok") ? (
-                        <>
-                          <TikTokIcon className="w-3.5 h-3.5" />
-                          <span className="text-xs">TikTok</span>
-                        </>
-                      ) : (
-                        <>
-                          <Youtube className="w-3.5 h-3.5" />
-                          <span className="text-xs">YouTube</span>
-                        </>
-                      )}
-                    </span>
+  {/* Platform badge */}
+  <span className="ml-auto flex items-center gap-1.5 px-2 py-0.5 bg-darker-wood/20 rounded-sm">
+  {activeTavern.video_platform === "tiktok" || activeTavern.video_url.includes("tiktok") ? (
+  <>
+  <TikTokIcon className="w-3.5 h-3.5" />
+  <span className="text-xs">TikTok</span>
+  </>
+  ) : activeTavern.video_platform === "facebook" || activeTavern.video_url.includes("facebook") || activeTavern.video_url.includes("fb.watch") ? (
+  <>
+  <Facebook className="w-3.5 h-3.5" />
+  <span className="text-xs">Facebook</span>
+  </>
+  ) : (
+  <>
+  <Youtube className="w-3.5 h-3.5" />
+  <span className="text-xs">YouTube</span>
+  </>
+  )}
+  </span>
                   </a>
                 )}
 

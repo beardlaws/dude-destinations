@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Play, Calendar, Youtube } from "lucide-react";
+import { MapPin, Play, Calendar, Youtube, Facebook } from "lucide-react";
 import { getTavernsWithVideos, type Tavern } from "@/lib/tavern-service";
 
 // TikTok icon component
@@ -15,11 +15,13 @@ function TikTokIcon({ className }: { className?: string }) {
 // Video card component for featured tavern
 function FeaturedVideoCard({ tavern }: { tavern: Tavern }) {
   const platform = tavern.video_platform || "youtube";
-  const PlatformIcon = platform === "tiktok" ? TikTokIcon : Youtube;
-  const platformLabel = platform === "tiktok" ? "TikTok" : "YouTube";
+  const PlatformIcon = platform === "tiktok" ? TikTokIcon : platform === "facebook" ? Facebook : Youtube;
+  const platformLabel = platform === "tiktok" ? "TikTok" : platform === "facebook" ? "Facebook" : "YouTube";
   const platformColor =
     platform === "tiktok"
       ? "bg-foreground text-background"
+      : platform === "facebook"
+      ? "bg-[#1877F2] text-white"
       : "bg-[#FF0000] text-white";
 
   return (
@@ -91,11 +93,13 @@ function FeaturedVideoCard({ tavern }: { tavern: Tavern }) {
 // Video card component for non-featured taverns
 function VideoCard({ tavern }: { tavern: Tavern }) {
   const platform = tavern.video_platform || "youtube";
-  const PlatformIcon = platform === "tiktok" ? TikTokIcon : Youtube;
-  const platformLabel = platform === "tiktok" ? "TikTok" : "YouTube";
+  const PlatformIcon = platform === "tiktok" ? TikTokIcon : platform === "facebook" ? Facebook : Youtube;
+  const platformLabel = platform === "tiktok" ? "TikTok" : platform === "facebook" ? "Facebook" : "YouTube";
   const platformColor =
     platform === "tiktok"
       ? "bg-foreground text-background"
+      : platform === "facebook"
+      ? "bg-[#1877F2] text-white"
       : "bg-[#FF0000] text-white";
 
   const formattedDate = new Date(tavern.updated_at).toLocaleDateString(
