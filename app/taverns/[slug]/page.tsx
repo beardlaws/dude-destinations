@@ -7,6 +7,7 @@ import TavernCard from "@/components/tavern-card";
 import DudeApprovedBadge from "@/components/dude-approved-badge";
 import { getTaverns, getTavernBySlug } from "@/lib/tavern-service";
 import { getEmbedUrl, getPlatformLabel } from "@/lib/video-utils";
+import ViewTracker from "@/components/view-tracker";
 import {
   ArrowLeft,
   MapPin,
@@ -61,6 +62,7 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
 
   return (
     <div className="min-h-screen bg-background">
+      <ViewTracker tavernId={tavern.id} source="web" />
       <SiteHeader />
       <main className="pt-20">
         <div className="relative">

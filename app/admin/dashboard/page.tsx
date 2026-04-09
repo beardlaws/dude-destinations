@@ -21,6 +21,10 @@ import {
   Inbox,
   RefreshCw,
   CheckCircle,
+  TrendingUp,
+  Users,
+  Video,
+  BarChart3,
 } from 'lucide-react';
 import DudeApprovedBadge from '@/components/dude-approved-badge';
 
@@ -35,6 +39,11 @@ export default function AdminDashboard() {
   const [filterDudeApproved, setFilterDudeApproved] = useState(false);
   const [filterState, setFilterState] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [analytics, setAnalytics] = useState({
+    totalViews: 0,
+    viewsToday: 0,
+    topViewed: [] as { name: string; views: number }[],
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -60,9 +69,41 @@ export default function AdminDashboard() {
     setIsLoading(false);
   };
 
+  // Load analytics
+  const loadAnalytics = async () => {
+    const supabase = createClient();
+    
+    // Get total views
+    const { count: totalViews } = await supabase
+      .from('tavern_views')
+      .select('*', { count: 'exact', head: true });
+    
+    // Get views today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const { count: viewsToday } = await supabase
+      .from('tavern_views')
+      .select('*', { count: 'exact', head: true })
+      .gte('viewed_at', today.toISOString());
+    
+    // Get top viewed taverns
+    const { data: topData } = await supabase
+      .from('taverns')
+      .select('name, view_count')
+      .order('view_count', { ascending: false })
+      .limit(5);
+    
+    setAnalytics({
+      totalViews: totalViews || 0,
+      viewsToday: viewsToday || 0,
+      topViewed: topData?.map(t => ({ name: t.name, views: t.view_count || 0 })) || [],
+    });
+  };
+
   useEffect(() => {
     if (user) {
       loadTaverns();
+      loadAnalytics();
     }
   }, [user]);
 
@@ -108,6 +149,46 @@ export default function AdminDashboard() {
     router.push('/');
   };
 
+  // Quick toggle for dude_approved status
+  const toggleDudeApproved = async (id: string, currentValue: boolean) => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('taverns')
+      .update({ dude_approved: !currentValue })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error toggling dude_approved:', error);
+    } else {
+      setTavernList(tavernList.map(t => 
+        t.id === id ? { ...t, dude_approved: !currentValue } : t
+      ));
+      setSuccessMessage(`${!currentValue ? 'Marked as' : 'Removed'} Dude Approved`);
+      setTimeout(() => setSuccessMessage(null), 2000);
+      await revalidateTaverns();
+    }
+  };
+
+  // Quick toggle for featured status
+  const toggleFeatured = async (id: string, currentValue: boolean) => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('taverns')
+      .update({ featured: !currentValue })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error toggling featured:', error);
+    } else {
+      setTavernList(tavernList.map(t => 
+        t.id === id ? { ...t, featured: !currentValue } : t
+      ));
+      setSuccessMessage(`${!currentValue ? 'Marked as' : 'Removed from'} Featured`);
+      setTimeout(() => setSuccessMessage(null), 2000);
+      await revalidateTaverns();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Success Toast */}
@@ -149,6 +230,75 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Analytics Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-card border border-border rounded-sm p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-sm bg-amber/20 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-amber" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{tavernList.length}</p>
+                <p className="text-xs text-muted-foreground">Total Stops</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-card border border-border rounded-sm p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-sm bg-green-500/20 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{tavernList.filter(t => t.dude_approved).length}</p>
+                <p className="text-xs text-muted-foreground">Dude Approved</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-card border border-border rounded-sm p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-sm bg-blue-500/20 flex items-center justify-center">
+                <Eye className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{analytics.totalViews.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Total Page Views</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-card border border-border rounded-sm p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-sm bg-purple-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{analytics.viewsToday}</p>
+                <p className="text-xs text-muted-foreground">Views Today</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Viewed Section */}
+        {analytics.topViewed.length > 0 && analytics.topViewed.some(t => t.views > 0) && (
+          <div className="bg-card border border-border rounded-sm p-5 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-amber" />
+              <h3 className="font-bold text-foreground">Most Viewed Stops</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              {analytics.topViewed.filter(t => t.views > 0).map((tavern, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-background/50 rounded-sm">
+                  <span className="text-2xl font-bold text-amber">#{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground text-sm truncate">{tavern.name}</p>
+                    <p className="text-xs text-muted-foreground">{tavern.views.toLocaleString()} views</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-4 mb-8">
           <Link
@@ -288,23 +438,55 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Rating */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="text-yellow-500 text-sm font-bold">{tavern.rating}</div>
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`text-xs ${
-                            i < Math.floor(Number(tavern.rating))
-                              ? 'text-yellow-500'
-                              : 'text-border'
-                          }`}
-                        >
-                          ★
-                        </div>
-                      ))}
+                  {/* Rating and Views */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="text-yellow-500 text-sm font-bold">{tavern.rating}</div>
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`text-xs ${
+                              i < Math.floor(Number(tavern.rating))
+                                ? 'text-yellow-500'
+                                : 'text-border'
+                            }`}
+                          >
+                            ★
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                    {(tavern as Tavern & { view_count?: number }).view_count ? (
+                      <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                        <Eye className="w-3 h-3" />
+                        {((tavern as Tavern & { view_count?: number }).view_count || 0).toLocaleString()}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Quick Toggle Buttons */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => toggleDudeApproved(tavern.id, tavern.dude_approved)}
+                      className={`flex-1 px-2 py-1.5 rounded-sm text-xs font-semibold transition-colors ${
+                        tavern.dude_approved
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : 'bg-background border border-border text-muted-foreground hover:border-green-500/50'
+                      }`}
+                    >
+                      {tavern.dude_approved ? 'Approved' : 'Mark Approved'}
+                    </button>
+                    <button
+                      onClick={() => toggleFeatured(tavern.id, tavern.featured)}
+                      className={`flex-1 px-2 py-1.5 rounded-sm text-xs font-semibold transition-colors ${
+                        tavern.featured
+                          ? 'bg-amber/20 text-amber border border-amber/30'
+                          : 'bg-background border border-border text-muted-foreground hover:border-amber/50'
+                      }`}
+                    >
+                      {tavern.featured ? 'Featured' : 'Mark Featured'}
+                    </button>
                   </div>
 
                   {/* Action Buttons */}
