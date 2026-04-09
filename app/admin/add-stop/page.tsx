@@ -151,7 +151,7 @@ const [formData, setFormData] = useState<FormData>({
         .replace(/^-|-$/g, "");
       setFormData((prev) => ({ ...prev, slug }));
     }
-  }, [formData.name, formData.slug]);
+  }, [formData.name]);
 
   const handleLogout = () => {
     logout();
