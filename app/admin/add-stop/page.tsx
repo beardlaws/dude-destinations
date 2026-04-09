@@ -30,6 +30,7 @@ import {
   Check,
   LogOut,
   Youtube,
+  Facebook,
   Compass,
   Save,
   Eye,
@@ -52,7 +53,7 @@ interface FormData {
   tags: string[];
   videoTitle: string;
   videoUrl: string;
-  videoPlatform: "youtube" | "tiktok";
+  videoPlatform: "youtube" | "tiktok" | "facebook";
   featured: boolean;
   dudeApproved: boolean;
   rating: string;
@@ -747,7 +748,7 @@ const [formData, setFormData] = useState<FormData>({
                     <label className="block text-sm font-semibold text-foreground">
                       Video Platform
                     </label>
-                    <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-3 gap-4">
                       <button
                         type="button"
                         onClick={() => updateField("videoPlatform", "youtube")}
@@ -789,6 +790,28 @@ const [formData, setFormData] = useState<FormData>({
                           <p className="text-xs text-muted-foreground">Short-form clips</p>
                         </div>
                         {formData.videoPlatform === "tiktok" && (
+                          <Check className="w-5 h-5 ml-auto" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateField("videoPlatform", "facebook")}
+                        className={`flex items-center gap-4 p-4 rounded-sm border transition-all ${
+                          formData.videoPlatform === "facebook"
+                            ? "bg-blue-500/10 border-blue-500 text-blue-400"
+                            : "bg-background/50 border-border text-muted-foreground hover:border-blue-500/40"
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-sm flex items-center justify-center ${
+                          formData.videoPlatform === "facebook" ? "bg-blue-500/20" : "bg-muted/30"
+                        }`}>
+                          <Facebook className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-foreground">Facebook</p>
+                          <p className="text-xs text-muted-foreground">Social videos</p>
+                        </div>
+                        {formData.videoPlatform === "facebook" && (
                           <Check className="w-5 h-5 ml-auto" />
                         )}
                       </button>

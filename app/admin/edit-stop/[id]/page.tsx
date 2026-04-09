@@ -24,6 +24,7 @@ import {
   Star,
   MapPin,
   Youtube,
+  Facebook,
   RefreshCw,
   CheckCircle,
   AlertCircle,
@@ -69,7 +70,7 @@ interface FormData {
   tags: string[];
   video_title: string;
   video_url: string;
-  video_platform: 'youtube' | 'tiktok';
+  video_platform: 'youtube' | 'tiktok' | 'facebook';
   featured: boolean;
   dude_approved: boolean;
   rating: string;
@@ -566,7 +567,7 @@ export default function EditStopPage() {
               <label className="block text-sm font-bold text-foreground mb-2">Platform</label>
               <Select
                 value={formData.video_platform}
-                onValueChange={(value: 'youtube' | 'tiktok') => {
+                onValueChange={(value: 'youtube' | 'tiktok' | 'facebook') => {
                   setFormData({ ...formData, video_platform: value });
                 }}
               >
@@ -584,6 +585,12 @@ export default function EditStopPage() {
                     <div className="flex items-center gap-2">
                       <TikTokIcon className="w-4 h-4" />
                       TikTok
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="facebook">
+                    <div className="flex items-center gap-2">
+                      <Facebook className="w-4 h-4" />
+                      Facebook
                     </div>
                   </SelectItem>
                 </SelectContent>
