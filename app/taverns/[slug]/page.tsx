@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Navigation,
   Youtube,
+  Facebook,
   Compass,
   ChevronRight,
 } from "lucide-react";
@@ -54,8 +55,9 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
     .filter((t) => (t.region === tavern.region || t.featured) && t.slug !== tavern.slug)
     .slice(0, 3);
 
-  const isYouTube = tavern.video_url?.includes("youtube") || tavern.video_url?.includes("youtu.be");
-  const isTikTok = tavern.video_url?.includes("tiktok");
+  const isYouTube = tavern.video_platform === "youtube" || tavern.video_url?.includes("youtube") || tavern.video_url?.includes("youtu.be");
+  const isTikTok = tavern.video_platform === "tiktok" || tavern.video_url?.includes("tiktok");
+  const isFacebook = tavern.video_platform === "facebook" || tavern.video_url?.includes("facebook") || tavern.video_url?.includes("fb.watch");
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,9 +97,9 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
                   <a href={tavern.video_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-6 py-4 bg-amber text-darker-wood font-bold rounded-sm hover:bg-amber-bright transition-all shadow-lg hover:shadow-amber/30">
                     <Play className="w-5 h-5" />
                     <span>Watch Review</span>
-                    <span className={`ml-2 flex items-center gap-1.5 px-2 py-1 rounded-sm ${isYouTube ? "bg-red-600/20" : "bg-white/20"}`}>
-                      {isYouTube ? <Youtube className="w-4 h-4" /> : isTikTok ? <TikTokIcon className="w-4 h-4" /> : null}
-                      <span className="text-xs font-semibold">{isYouTube ? "YouTube" : isTikTok ? "TikTok" : ""}</span>
+                    <span className={`ml-2 flex items-center gap-1.5 px-2 py-1 rounded-sm ${isYouTube ? "bg-red-600/20" : isFacebook ? "bg-[#1877F2]/20" : "bg-white/20"}`}>
+                      {isYouTube ? <Youtube className="w-4 h-4" /> : isFacebook ? <Facebook className="w-4 h-4" /> : isTikTok ? <TikTokIcon className="w-4 h-4" /> : null}
+                      <span className="text-xs font-semibold">{isYouTube ? "YouTube" : isFacebook ? "Facebook" : isTikTok ? "TikTok" : ""}</span>
                     </span>
                   </a>
                 )}
@@ -119,12 +121,12 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
               {tavern.video_url && (
                 <div className="mb-12">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className={`w-10 h-10 rounded-sm flex items-center justify-center ${isYouTube ? "bg-red-500/10" : "bg-white/10"}`}>
-                      {isYouTube ? <Youtube className="w-5 h-5 text-red-500" /> : isTikTok ? <TikTokIcon className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-amber" />}
+                    <div className={`w-10 h-10 rounded-sm flex items-center justify-center ${isYouTube ? "bg-red-500/10" : isFacebook ? "bg-[#1877F2]/10" : "bg-white/10"}`}>
+                      {isYouTube ? <Youtube className="w-5 h-5 text-red-500" /> : isFacebook ? <Facebook className="w-5 h-5 text-[#1877F2]" /> : isTikTok ? <TikTokIcon className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-amber" />}
                     </div>
                     <div>
                       <h2 className="font-serif text-xl font-bold text-foreground">Watch the Review</h2>
-                      <p className="text-sm text-muted-foreground">{isYouTube ? "Full video review on YouTube" : isTikTok ? "Quick clip on TikTok" : "Video review"}</p>
+                      <p className="text-sm text-muted-foreground">{isYouTube ? "Full video review on YouTube" : isFacebook ? "Video review on Facebook" : isTikTok ? "Quick clip on TikTok" : "Video review"}</p>
                     </div>
                   </div>
                   <div className="relative bg-card rounded-sm overflow-hidden border border-border aspect-video">
@@ -132,14 +134,14 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
                       <iframe src={getEmbedUrl(tavern.video_url, "youtube")} title={tavern.video_title} className="w-full h-full border-0" allowFullScreen loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-card to-muted p-8">
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${isTikTok ? "bg-white/10" : "bg-amber/10"}`}>
-                          {isTikTok ? <TikTokIcon className="w-8 h-8 text-white" /> : <Play className="w-8 h-8 text-amber" />}
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${isFacebook ? "bg-[#1877F2]/10" : isTikTok ? "bg-white/10" : "bg-amber/10"}`}>
+                          {isFacebook ? <Facebook className="w-8 h-8 text-[#1877F2]" /> : isTikTok ? <TikTokIcon className="w-8 h-8 text-white" /> : <Play className="w-8 h-8 text-amber" />}
                         </div>
                         <p className="text-lg font-semibold text-foreground mb-2 text-center">{tavern.video_title}</p>
-                        <p className="text-sm text-muted-foreground mb-6 text-center">{isTikTok ? "TikTok videos open in the TikTok app" : "Click below to watch"}</p>
-                        <a href={tavern.video_url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 px-6 py-3 font-bold rounded-sm transition-all ${isTikTok ? "bg-white text-black hover:bg-white/90" : "bg-amber text-darker-wood hover:bg-amber-bright"}`}>
+                        <p className="text-sm text-muted-foreground mb-6 text-center">{isFacebook ? "Facebook videos open in a new tab" : isTikTok ? "TikTok videos open in the TikTok app" : "Click below to watch"}</p>
+                        <a href={tavern.video_url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 px-6 py-3 font-bold rounded-sm transition-all ${isFacebook ? "bg-[#1877F2] text-white hover:bg-[#1877F2]/90" : isTikTok ? "bg-white text-black hover:bg-white/90" : "bg-amber text-darker-wood hover:bg-amber-bright"}`}>
                           <ExternalLink className="w-4 h-4" />
-                          Watch on {getPlatformLabel(isTikTok ? "tiktok" : "youtube")}
+                          Watch on {getPlatformLabel(isFacebook ? "facebook" : isTikTok ? "tiktok" : "youtube")}
                         </a>
                       </div>
                     )}
@@ -196,9 +198,9 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
                   {tavern.video_url && (
                     <div>
                       <p className="text-xs font-bold tracking-wider uppercase text-muted-foreground mb-2">Video Platform</p>
-                      <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-sm ${isYouTube ? "bg-red-500/10 border border-red-500/30" : "bg-white/5 border border-white/20"}`}>
-                        {isYouTube ? <Youtube className="w-4 h-4 text-red-500" /> : isTikTok ? <TikTokIcon className="w-4 h-4 text-white" /> : null}
-                        <span className="text-sm font-semibold text-foreground">{getPlatformLabel(isYouTube ? "youtube" : "tiktok")}</span>
+                      <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-sm ${isYouTube ? "bg-red-500/10 border border-red-500/30" : isFacebook ? "bg-[#1877F2]/10 border border-[#1877F2]/30" : "bg-white/5 border border-white/20"}`}>
+                        {isYouTube ? <Youtube className="w-4 h-4 text-red-500" /> : isFacebook ? <Facebook className="w-4 h-4 text-[#1877F2]" /> : isTikTok ? <TikTokIcon className="w-4 h-4 text-white" /> : null}
+                        <span className="text-sm font-semibold text-foreground">{getPlatformLabel(isYouTube ? "youtube" : isFacebook ? "facebook" : "tiktok")}</span>
                       </div>
                     </div>
                   )}

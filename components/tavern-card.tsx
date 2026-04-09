@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Star, Play, Youtube } from "lucide-react";
+import { MapPin, Star, Play, Youtube, Facebook } from "lucide-react";
 import type { Tavern } from "@/lib/tavern-service";
 import DudeApprovedBadge from "./dude-approved-badge";
 import VideoPreviewModal from "./video-preview-modal";
+import FavoriteButton from "./favorite-button";
 import { extractVideoId } from "@/lib/video-utils";
 
 // TikTok icon
@@ -39,8 +40,9 @@ export default function TavernCard({ tavern }: TavernCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const isYouTube = tavern.video_url?.includes("youtube") || tavern.video_url?.includes("youtu.be");
-  const isTikTok = tavern.video_url?.includes("tiktok");
+  const isYouTube = tavern.video_platform === "youtube" || tavern.video_url?.includes("youtube") || tavern.video_url?.includes("youtu.be");
+  const isTikTok = tavern.video_platform === "tiktok" || tavern.video_url?.includes("tiktok");
+  const isFacebook = tavern.video_platform === "facebook" || tavern.video_url?.includes("facebook") || tavern.video_url?.includes("fb.watch");
   
   // Get YouTube thumbnail if available
   const videoThumbnail = isYouTube && tavern.video_url 
@@ -78,16 +80,18 @@ export default function TavernCard({ tavern }: TavernCardProps) {
             >
               <div className="flex flex-col items-center gap-2">
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${
-                  isYouTube ? "bg-red-600" : "bg-white"
+                  isYouTube ? "bg-red-600" : isFacebook ? "bg-[#1877F2]" : "bg-white"
                 }`}>
                   {isYouTube ? (
                     <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                  ) : isFacebook ? (
+                    <Facebook className="w-6 h-6 text-white" />
                   ) : (
                     <TikTokIcon className="w-6 h-6 text-black" />
                   )}
                 </div>
                 <span className="text-xs font-bold text-white bg-black/60 px-2 py-1 rounded-sm">
-                  {isYouTube ? "Watch on YouTube" : "Watch on TikTok"}
+                  {isYouTube ? "Watch on YouTube" : isFacebook ? "Watch on Facebook" : "Watch on TikTok"}
                 </span>
               </div>
             </button>
@@ -106,22 +110,33 @@ export default function TavernCard({ tavern }: TavernCardProps) {
               )}
             </div>
             <div className="flex flex-col items-end gap-2">
-              {/* Rating */}
-              <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-sm">
-                <Star className="w-3 h-3 fill-amber text-amber" />
-                <span className="text-xs font-bold text-foreground">{tavern.rating}</span>
+              {/* Favorite button */}
+              <FavoriteButton tavernId={tavern.id} size="sm" variant="card" />
+              {/* Rating with visual stars */}
+              <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-sm">
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={`w-2.5 h-2.5 ${i < Math.floor(tavern.rating) ? "fill-amber text-amber" : "text-muted-foreground/50"}`} 
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-foreground ml-0.5">{tavern.rating}</span>
               </div>
               {/* Video indicator */}
               {tavern.video_url && !isHovered && (
                 <div className={`flex items-center gap-1 px-2 py-0.5 rounded-sm ${
-                  isYouTube ? "bg-red-600/90" : "bg-white/90"
+                  isYouTube ? "bg-red-600/90" : isFacebook ? "bg-[#1877F2]/90" : "bg-white/90"
                 }`}>
                   {isYouTube ? (
                     <Youtube className="w-3 h-3 text-white" />
+                  ) : isFacebook ? (
+                    <Facebook className="w-3 h-3 text-white" />
                   ) : (
                     <TikTokIcon className="w-3 h-3 text-black" />
                   )}
-                  <span className={`text-[10px] font-bold ${isYouTube ? "text-white" : "text-black"}`}>
+                  <span className={`text-[10px] font-bold ${isYouTube || isFacebook ? "text-white" : "text-black"}`}>
                     Video
                   </span>
                 </div>
@@ -169,10 +184,12 @@ export default function TavernCard({ tavern }: TavernCardProps) {
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-sm transition-colors ${
                   isYouTube
                     ? "bg-red-600 text-white hover:bg-red-700"
+                    : isFacebook
+                    ? "bg-[#1877F2] text-white hover:bg-[#1877F2]/90"
                     : "bg-white text-black hover:bg-white/90"
                 }`}
               >
-                {isYouTube ? <Youtube className="w-3 h-3" /> : <TikTokIcon className="w-3 h-3" />}
+                {isYouTube ? <Youtube className="w-3 h-3" /> : isFacebook ? <Facebook className="w-3 h-3" /> : <TikTokIcon className="w-3 h-3" />}
                 Watch
               </button>
             )}

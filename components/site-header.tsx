@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Heart } from "lucide-react";
+import { useFavorites } from "@/lib/favorites-context";
 
 const navLinks = [
   { id: "map", label: "The Map", href: "/#dude-destination" },
@@ -16,6 +17,7 @@ const navLinks = [
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { favoritesCount } = useFavorites();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -68,7 +70,19 @@ export default function SiteHeader() {
           </nav>
 
           {/* CTA */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-4">
+            <Link
+              href="/favorites"
+              className="relative p-2 text-muted-foreground hover:text-red-400 transition-colors"
+              aria-label={`Saved stops (${favoritesCount})`}
+            >
+              <Heart className={`w-5 h-5 ${favoritesCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {favoritesCount > 9 ? "9+" : favoritesCount}
+                </span>
+              )}
+            </Link>
             <Link
               href="/#dude-destination"
               className="px-5 py-2 text-sm font-bold tracking-wider uppercase bg-amber text-darker-wood rounded-sm hover:bg-amber-bright transition-colors duration-200"
@@ -103,6 +117,14 @@ export default function SiteHeader() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/favorites"
+              className="flex items-center gap-2 text-base font-semibold tracking-wider uppercase text-foreground hover:text-red-400 transition-colors py-1"
+              onClick={() => setMobileOpen(false)}
+            >
+              <Heart className={`w-5 h-5 ${favoritesCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
+              Saved Stops {favoritesCount > 0 && `(${favoritesCount})`}
+            </Link>
             <Link
               href="/#dude-destination"
               className="mt-2 px-5 py-3 text-sm font-bold tracking-wider uppercase bg-amber text-darker-wood rounded-sm text-center hover:bg-amber-bright transition-colors"

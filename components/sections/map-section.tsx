@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Route,
   Settings,
+  ArrowUpDown,
 } from "lucide-react";
 import { SUPPORTED_STATES, STATE_NAMES } from "@/lib/map-utils";
 import DudeApprovedBadge, { DudeApprovedIndicator } from "@/components/dude-approved-badge";
@@ -91,6 +92,7 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
   const [dudeApprovedOnly, setDudeApprovedOnly] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
   const [sortByDistance, setSortByDistance] = useState(false);
+  const [sortOption, setSortOption] = useState<"stop_number" | "rating" | "newest">("stop_number");
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -154,9 +156,21 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
     distance: userLocation ? getDistanceMiles(userLocation.lat, userLocation.lon, t.latitude, t.longitude) : null
   }));
 
-  const sortedTaverns = sortByDistance && userLocation
-    ? [...tavernsWithDistance].sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0))
-    : tavernsWithDistance;
+  // Apply sorting based on active sort option
+  const sortedTaverns = (() => {
+    if (sortByDistance && userLocation) {
+      return [...tavernsWithDistance].sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+    }
+    switch (sortOption) {
+      case "rating":
+        return [...tavernsWithDistance].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case "newest":
+        return [...tavernsWithDistance].sort((a, b) => (b.stop_number || 0) - (a.stop_number || 0));
+      case "stop_number":
+      default:
+        return [...tavernsWithDistance].sort((a, b) => (a.stop_number || 0) - (b.stop_number || 0));
+    }
+  })();
 
   // Get states that have taverns for highlighting
   const statesWithTaverns = [...new Set(taverns.map(t => t.state))];
@@ -181,7 +195,7 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
   };
 
   const hasActiveFilters =
-    searchQuery || activeFilter || activeRegion !== "All Regions" || activeState !== "All States" || dudeApprovedOnly || sortByDistance;
+    searchQuery || activeFilter || activeRegion !== "All Regions" || activeState !== "All States" || dudeApprovedOnly || sortByDistance || sortOption !== "stop_number";
 
   return (
     <section
@@ -386,9 +400,33 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
               }`}>
                 {stats.dudeApprovedCount}
               </span>
-            </button>
-
-            {/* Filter toggle */}
+                    </button>
+                    
+                    {/* Sort dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          // Cycle through sort options
+                          const options: ("stop_number" | "rating" | "newest")[] = ["stop_number", "rating", "newest"];
+                          const currentIndex = options.indexOf(sortOption);
+                          const nextIndex = (currentIndex + 1) % options.length;
+                          setSortOption(options[nextIndex]);
+                          if (sortByDistance) setSortByDistance(false);
+                        }}
+                        className={`flex items-center gap-2 px-5 py-3 border rounded-sm text-sm font-bold transition-all ${
+                          sortOption !== "stop_number"
+                            ? "border-blue-500 bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/10"
+                            : "border-border/50 text-muted-foreground hover:border-blue-500/50 hover:text-foreground bg-background/40"
+                        }`}
+                      >
+                        <ArrowUpDown className="w-4 h-4" />
+                        <span>
+                          {sortOption === "rating" ? "Top Rated" : sortOption === "newest" ? "Newest" : "Stop #"}
+                        </span>
+                      </button>
+                    </div>
+                    
+                    {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-5 py-3 border rounded-sm text-sm font-semibold transition-all ${
@@ -556,12 +594,17 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
               <p className="text-xs font-black tracking-wider uppercase text-muted-foreground">
                 All Stops ({sortedTaverns.length})
               </p>
-              {sortByDistance && userLocation && (
-                <span className="text-[10px] text-green-400 font-semibold flex items-center gap-1">
-                  <Navigation className="w-3 h-3" />
-                  Sorted by distance
-                </span>
-              )}
+                    {sortByDistance && userLocation ? (
+                      <span className="text-[10px] text-green-400 font-semibold flex items-center gap-1">
+                        <Navigation className="w-3 h-3" />
+                        Sorted by distance
+                      </span>
+                    ) : sortOption !== "stop_number" && (
+                      <span className="text-[10px] text-blue-400 font-semibold flex items-center gap-1">
+                        <ArrowUpDown className="w-3 h-3" />
+                        {sortOption === "rating" ? "Top rated first" : "Newest first"}
+                      </span>
+                    )}
             </div>
           </div>
           <div className="p-2">

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Barlow, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { FavoritesProvider } from '@/lib/favorites-context'
 import './globals.css'
 
 const barlow = Barlow({
@@ -49,7 +50,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth" data-scroll-behavior="smooth">
       <body className={`${barlow.variable} ${playfair.variable} font-sans antialiased`}>
-        {children}
+        <FavoritesProvider>
+          {children}
+        </FavoritesProvider>
         <Analytics />
       </body>
     </html>
