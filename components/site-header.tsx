@@ -9,6 +9,8 @@ const navLinks = [
   { id: "map", label: "The Map", href: "/#dude-destination" },
   { id: "taverns", label: "Taverns", href: "/#taverns" },
   { id: "reviews", label: "Reviews", href: "/#reviews" },
+  { id: "recipes", label: "Recipes", href: "https://www.thedudenetwork.com/recipes", external: true },
+  { id: "merch", label: "Merch", href: "https://the-dude-network-shop.printify.me/", external: true },
   { id: "about", label: "About", href: "/#about" },
   { id: "submit", label: "Submit a Stop", href: "/#submit" },
 ];
@@ -60,6 +62,8 @@ export default function SiteHeader() {
               <Link
                 key={link.id}
                 href={link.href}
+                target={link.external ? "_blank" : undefined}
+                rel={link.external ? "noopener noreferrer" : undefined}
                 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground hover:text-amber transition-colors duration-200"
               >
                 {link.label}
@@ -97,6 +101,8 @@ export default function SiteHeader() {
               <Link
                 key={link.id}
                 href={link.href}
+                target={link.external ? "_blank" : undefined}
+                rel={link.external ? "noopener noreferrer" : undefined}
                 className="text-base font-semibold tracking-wider uppercase text-foreground hover:text-amber transition-colors py-1"
                 onClick={() => setMobileOpen(false)}
               >
