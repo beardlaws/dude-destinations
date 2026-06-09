@@ -6,6 +6,7 @@ import VideoReviewsSection from '@/components/sections/video-reviews-section'
 import CategoriesSection from '@/components/sections/categories-section'
 import SubmitSection from '@/components/sections/submit-section'
 import AboutSection from '@/components/sections/about-section'
+import EmailSignupSection from '@/components/sections/email-signup-section'
 import SiteHeader from '@/components/site-header'
 import SiteFooter from '@/components/site-footer'
 import { getTaverns, getTavernStats, getRegions } from '@/lib/tavern-service'
@@ -33,6 +34,7 @@ export default async function HomePage() {
         <CategoriesSection taverns={taverns} />
         <SubmitSection />
         <AboutSection />
+        <EmailSignupSection />
       </main>
 
       <SiteFooter />
