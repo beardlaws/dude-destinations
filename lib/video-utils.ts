@@ -110,3 +110,4 @@ export function isValidVideoUrl(url: string, platform: VideoPlatform): boolean {
   if (platform === 'facebook') return /(?:facebook\.com|fb\.watch)/.test(url);
   return false;
 }
+
