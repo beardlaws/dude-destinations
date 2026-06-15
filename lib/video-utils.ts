@@ -1,86 +1,110 @@
 // Helper utility for rendering video embeds based on platform
-// This makes it easy to swap platforms later and maintain consistency across the app
+// Supports YouTube, TikTok, and Facebook
+
+export type VideoPlatform = 'youtube' | 'tiktok' | 'facebook';
 
 export interface VideoInfo {
-  platform: 'youtube' | 'tiktok'
-  url: string
-  title: string
+  platform: VideoPlatform;
+  url: string;
+  title: string;
 }
 
 /**
  * Extract video ID from platform URL
- * Supports YouTube and TikTok URLs in various formats
  */
-export function extractVideoId(url: string, platform: 'youtube' | 'tiktok'): string {
+export function extractVideoId(url: string, platform: VideoPlatform): string {
   if (platform === 'youtube') {
-    // Handle youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID formats
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-      /^([a-zA-Z0-9_-]{11})$/, // Direct 11-char ID
-    ]
+      /^([a-zA-Z0-9_-]{11})$/,
+    ];
     for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) return match[1]
+      const match = url.match(pattern);
+      if (match) return match[1];
     }
   } else if (platform === 'tiktok') {
-    // Handle tiktok.com/@user/video/ID or vm.tiktok.com/ID formats
-    const patterns = [/\/video\/(\d+)/, /vm\.tiktok\.com\/(\w+)/]
+    const patterns = [/\/video\/(\d+)/, /vm\.tiktok\.com\/(\w+)/];
     for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) return match[1]
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+  } else if (platform === 'facebook') {
+    // Handle facebook.com/watch?v=ID or facebook.com/video/ID or reel URLs
+    const patterns = [
+      /facebook\.com\/watch\/?\?v=(\d+)/,
+      /facebook\.com\/(?:video\/|reel\/)(\d+)/,
+      /facebook\.com\/[^/]+\/videos\/(\d+)/,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
     }
   }
-  return url
+  return url;
 }
 
 /**
- * Get YouTube embed URL from video ID or full URL
+ * Get YouTube embed URL
  */
 export function getYouTubeEmbedUrl(url: string): string {
-  const videoId = extractVideoId(url, 'youtube')
-  return `https://www.youtube.com/embed/${videoId}`
+  const videoId = extractVideoId(url, 'youtube');
+  return `https://www.youtube.com/embed/${videoId}`;
 }
 
 /**
- * Get TikTok embed code (TikTok requires special handling)
- * Returns a container-ready embed or instruction
+ * Get TikTok embed URL
  */
 export function getTikTokEmbedUrl(url: string): string {
-  // TikTok embeds are complex, so we return the full URL for now
-  // In production, you'd use TikTok's Embed API
   return url.includes('vm.tiktok.com') || url.includes('tiktok.com')
     ? url
-    : `https://www.tiktok.com/@unknown/video/${url}`
+    : `https://www.tiktok.com/@unknown/video/${url}`;
+}
+
+/**
+ * Get Facebook embed URL
+ * Uses Facebook's standard video embed format
+ */
+export function getFacebookEmbedUrl(url: string): string {
+  const encoded = encodeURIComponent(url);
+  return `https://www.facebook.com/plugins/video.php?href=${encoded}&show_text=0&width=560`;
 }
 
 /**
  * Get the embed URL based on platform
- * Usage: Pass to <iframe src={getEmbedUrl(video.url, video.platform)} />
  */
-export function getEmbedUrl(url: string, platform: 'youtube' | 'tiktok'): string {
-  if (platform === 'youtube') {
-    return getYouTubeEmbedUrl(url)
-  } else if (platform === 'tiktok') {
-    return getTikTokEmbedUrl(url)
-  }
-  return url
+export function getEmbedUrl(url: string, platform: VideoPlatform): string {
+  if (platform === 'youtube') return getYouTubeEmbedUrl(url);
+  if (platform === 'tiktok') return getTikTokEmbedUrl(url);
+  if (platform === 'facebook') return getFacebookEmbedUrl(url);
+  return url;
+}
+
+/**
+ * Auto-detect platform from URL (useful when platform isn't stored)
+ */
+export function detectPlatform(url: string): VideoPlatform {
+  if (url.includes('youtube') || url.includes('youtu.be')) return 'youtube';
+  if (url.includes('tiktok')) return 'tiktok';
+  if (url.includes('facebook') || url.includes('fb.watch')) return 'facebook';
+  return 'youtube'; // fallback
 }
 
 /**
  * Get platform display name
  */
-export function getPlatformLabel(platform: 'youtube' | 'tiktok'): string {
-  return platform === 'youtube' ? 'YouTube' : 'TikTok'
+export function getPlatformLabel(platform: VideoPlatform): string {
+  if (platform === 'youtube') return 'YouTube';
+  if (platform === 'tiktok') return 'TikTok';
+  if (platform === 'facebook') return 'Facebook';
+  return platform;
 }
 
 /**
- * Validate if URL is likely a valid platform URL
+ * Validate if URL matches a supported platform
  */
-export function isValidVideoUrl(url: string, platform: 'youtube' | 'tiktok'): boolean {
-  if (platform === 'youtube') {
-    return /(?:youtube|youtu\.be)/.test(url)
-  } else if (platform === 'tiktok') {
-    return /(?:tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com)/.test(url)
-  }
-  return false
+export function isValidVideoUrl(url: string, platform: VideoPlatform): boolean {
+  if (platform === 'youtube') return /(?:youtube|youtu\.be)/.test(url);
+  if (platform === 'tiktok') return /(?:tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com)/.test(url);
+  if (platform === 'facebook') return /(?:facebook\.com|fb\.watch)/.test(url);
+  return false;
 }
