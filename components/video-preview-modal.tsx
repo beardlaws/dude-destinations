@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { X, Youtube, ExternalLink } from "lucide-react";
+import { X, Youtube, Facebook, ExternalLink } from "lucide-react";
 import { getEmbedUrl } from "@/lib/video-utils";
 
 // TikTok icon
@@ -29,6 +29,7 @@ export default function VideoPreviewModal({
   tavernName,
 }: VideoPreviewModalProps) {
   const isYouTube = videoUrl?.includes("youtube") || videoUrl?.includes("youtu.be");
+  const isFacebook = videoUrl?.includes("facebook") || videoUrl?.includes("fb.watch");
   const isTikTok = videoUrl?.includes("tiktok");
 
   const handleEscape = useCallback((e: KeyboardEvent) => {
@@ -48,6 +49,12 @@ export default function VideoPreviewModal({
 
   if (!isOpen) return null;
 
+  // Header icon
+  const HeaderIcon = isYouTube ? Youtube : isFacebook ? Facebook : TikTokIcon;
+  const headerIconBg = isYouTube ? "bg-red-500/20" : isFacebook ? "bg-blue-500/20" : "bg-white/10";
+  const headerIconColor = isYouTube ? "text-red-500" : isFacebook ? "text-blue-400" : "text-white";
+  const platformLabel = isYouTube ? "YouTube" : isFacebook ? "Facebook" : "TikTok";
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -64,8 +71,8 @@ export default function VideoPreviewModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-sm flex items-center justify-center ${isYouTube ? "bg-red-500/20" : "bg-white/10"}`}>
-              {isYouTube ? <Youtube className="w-4 h-4 text-red-500" /> : <TikTokIcon className="w-4 h-4 text-white" />}
+            <div className={`w-8 h-8 rounded-sm flex items-center justify-center ${headerIconBg}`}>
+              <HeaderIcon className={`w-4 h-4 ${headerIconColor}`} />
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">{tavernName}</p>
@@ -91,7 +98,16 @@ export default function VideoPreviewModal({
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
+          ) : isFacebook ? (
+            <iframe
+              src={getEmbedUrl(videoUrl, "facebook")}
+              title={videoTitle || `${tavernName} Video Review`}
+              className="w-full h-full border-0"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+              allowFullScreen
+            />
           ) : (
+            // TikTok — opens externally (TikTok blocks iframes)
             <div className="w-full h-full flex flex-col items-center justify-center p-8">
               <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-6">
                 <TikTokIcon className="w-8 h-8 text-white" />
