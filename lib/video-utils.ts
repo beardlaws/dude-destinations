@@ -29,7 +29,6 @@ export function extractVideoId(url: string, platform: VideoPlatform): string {
       if (match) return match[1];
     }
   } else if (platform === 'facebook') {
-    // Handle facebook.com/watch?v=ID or facebook.com/video/ID or reel URLs
     const patterns = [
       /facebook\.com\/watch\/?\?v=(\d+)/,
       /facebook\.com\/(?:video\/|reel\/)(\d+)/,
@@ -62,7 +61,6 @@ export function getTikTokEmbedUrl(url: string): string {
 
 /**
  * Get Facebook embed URL
- * Uses Facebook's standard video embed format
  */
 export function getFacebookEmbedUrl(url: string): string {
   const encoded = encodeURIComponent(url);
@@ -71,22 +69,26 @@ export function getFacebookEmbedUrl(url: string): string {
 
 /**
  * Get the embed URL based on platform
+ * Accepts VideoPlatform type or plain string for backwards compatibility
  */
-export function getEmbedUrl(url: string, platform: VideoPlatform): string {
+export function getEmbedUrl(url: string, platform: VideoPlatform | string): string {
   if (platform === 'youtube') return getYouTubeEmbedUrl(url);
   if (platform === 'tiktok') return getTikTokEmbedUrl(url);
   if (platform === 'facebook') return getFacebookEmbedUrl(url);
+  // fallback: auto-detect from URL
+  if (url.includes('youtube') || url.includes('youtu.be')) return getYouTubeEmbedUrl(url);
+  if (url.includes('facebook') || url.includes('fb.watch')) return getFacebookEmbedUrl(url);
   return url;
 }
 
 /**
- * Auto-detect platform from URL (useful when platform isn't stored)
+ * Auto-detect platform from URL
  */
 export function detectPlatform(url: string): VideoPlatform {
   if (url.includes('youtube') || url.includes('youtu.be')) return 'youtube';
   if (url.includes('tiktok')) return 'tiktok';
   if (url.includes('facebook') || url.includes('fb.watch')) return 'facebook';
-  return 'youtube'; // fallback
+  return 'youtube';
 }
 
 /**
