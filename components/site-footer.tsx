@@ -11,16 +11,15 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 const footerLinks = {
   Explore: [
-    { label: "The Tavern Map", href: "/#map" },
-    { label: "Featured Taverns", href: "/#taverns" },
-    { label: "Latest Reviews", href: "/#reviews" },
-    { label: "All Stops", href: "/#taverns" },
+    { label: "The Tavern Map", href: "#map" },
+    { label: "Featured Taverns", href: "#taverns" },
+    { label: "Latest Reviews", href: "#reviews" },
+    { label: "All Stops", href: "#taverns" },
   ],
   Network: [
-    { label: "About the Tour", href: "/#about" },
-    { label: "Submit a Tavern", href: "/#submit" },
-    { label: "Recipes", href: "https://www.thedudenetwork.com/recipes", external: true },
-    { label: "Merch Shop", href: "https://the-dude-network-shop.printify.me/", external: true },
+    { label: "About the Tour", href: "#about" },
+    { label: "Submit a Tavern", href: "#submit" },
+    { label: "Categories", href: "#filters" },
     { label: "Contact Us", href: "#" },
   ],
 };
@@ -98,12 +97,10 @@ export default function SiteFooter() {
                 {section}
               </h3>
               <ul className="flex flex-col gap-2">
-                {links.map(({ label, href, external }: { label: string; href: string; external?: boolean }) => (
+                {links.map(({ label, href }) => (
                   <li key={label}>
                     <Link
                       href={href}
-                      target={external ? "_blank" : undefined}
-                      rel={external ? "noopener noreferrer" : undefined}
                       className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {label}
