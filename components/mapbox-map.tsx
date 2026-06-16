@@ -95,8 +95,8 @@ export default function MapboxMap({
           filter: ["==", ["get", "dude_approved"], 0],
           paint: {
             "circle-color": ["case", ["==", ["get", "is_active"], 1], "#3a3530", "#1e1b17"],
-            "circle-radius": ["case", ["==", ["get", "is_active"], 1], 16, 12],
-            "circle-stroke-width": ["case", ["==", ["get", "is_active"], 1], 2.5, 2],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 8, 8, 12, 12, 15, 16],
+            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 5, 1, 10, 1.5, 15, 2.5],
             "circle-stroke-color": "#d9a54b",
             "circle-opacity": 0.95,
           },
@@ -110,33 +110,14 @@ export default function MapboxMap({
           filter: ["==", ["get", "dude_approved"], 1],
           paint: {
             "circle-color": ["case", ["==", ["get", "is_active"], 1], "#f5c55a", "#d9a54b"],
-            "circle-radius": ["case", ["==", ["get", "is_active"], 1], 16, 12],
-            "circle-stroke-width": ["case", ["==", ["get", "is_active"], 1], 2.5, 2],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 8, 8, 12, 12, 15, 16],
+            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 5, 1, 10, 1.5, 15, 2.5],
             "circle-stroke-color": "#ffffff",
             "circle-opacity": 0.95,
           },
         });
 
-        // Stop number labels
-        map.addLayer({
-          id: "pin-labels",
-          type: "symbol",
-          source: "taverns",
-          layout: {
-            "text-field": ["to-string", ["get", "stop_number"]],
-            "text-font": ["DIN Offc Pro Bold", "Arial Unicode MS Bold"],
-            "text-size": 10,
-            "text-allow-overlap": true,
-            "text-ignore-placement": true,
-          },
-          paint: {
-            "text-color": [
-              "case",
-              ["==", ["get", "dude_approved"], 1], "#1a1710",
-              "#ffffff"
-            ],
-          },
-        });
+
 
         // Active pulse ring
         map.addLayer({
@@ -160,7 +141,6 @@ export default function MapboxMap({
         };
         map.on("click", "pin-dark", handleClick);
         map.on("click", "pin-approved", handleClick);
-        map.on("click", "pin-labels", handleClick);
 
         // Hover handlers
         const handleEnter = (e: any) => {
@@ -185,10 +165,8 @@ export default function MapboxMap({
 
         map.on("mouseenter", "pin-dark", handleEnter);
         map.on("mouseenter", "pin-approved", handleEnter);
-        map.on("mouseenter", "pin-labels", handleEnter);
         map.on("mouseleave", "pin-dark", handleLeave);
         map.on("mouseleave", "pin-approved", handleLeave);
-        map.on("mouseleave", "pin-labels", handleLeave);
       });
     })();
 
