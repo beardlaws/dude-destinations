@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { data: taverns } = await supabase
       .from('taverns')
@@ -52,6 +52,6 @@ ${allPages
     })
   } catch (error) {
     console.error('Sitemap error:', error)
-    return new NextResponse('Error generating sitemap', { status: 500 })
+    return new NextResponse(`Error generating sitemap: ${error}`, { status: 500 })
   }
 }
