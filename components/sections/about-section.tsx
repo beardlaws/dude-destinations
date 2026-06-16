@@ -8,7 +8,7 @@ interface AboutSectionProps {
 }
 
 export default function AboutSection({ stats }: AboutSectionProps) {
-  const stopCount = stats?.total ?? 27;
+  const stopCount = stats?.totalStops ?? 27;
 
   return (
     <section id="about" className="py-16 lg:py-24 bg-dark-wood border-t border-border">
