@@ -21,7 +21,6 @@ export const metadata: Metadata = {
   title: 'The Dude Network Tavern Tour | Ohio Taverns, Cold Drinks, Local Legends',
   description:
     'Ohio taverns, cold drinks, local legends, and the stories worth stopping for. Follow our growing map of tavern reviews across Ohio.',
-  generator: 'v0.app',
   keywords: [
     'Ohio taverns',
     'Ohio bars',
@@ -29,15 +28,38 @@ export const metadata: Metadata = {
     'dive bars Ohio',
     'Ohio road trip',
     'small town bars',
+    'Ohio dive bars',
+    'best bars Ohio',
   ],
   openGraph: {
     title: 'The Dude Network Tavern Tour',
     description: 'Ohio taverns, cold drinks, local legends, and the stories worth stopping for.',
     type: 'website',
+    url: 'https://www.dudedestinations.com',
+    siteName: 'The Dude Network Tavern Tour',
+    images: [
+      {
+        url: 'https://www.dudedestinations.com/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'The Dude Network Tavern Tour — Ohio Taverns Map',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Dude Network Tavern Tour',
+    description: 'Ohio taverns, cold drinks, local legends, and the stories worth stopping for.',
+    images: ['https://www.dudedestinations.com/og-image.jpg'],
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-icon.png',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   verification: {
     google: '-Bppxl1daU1TI1oJjz8XUE4cUCCfnNNcclfE9rbRhgA',
