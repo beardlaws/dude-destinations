@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useMemo } from "react";
+import { memo, useState, useMemo, useCallback } from "react";
 import {
   ComposableMap,
   Geographies,
@@ -22,6 +22,16 @@ const SUPPORTED_FIPS: Record<string, string> = {
   "26": "MI",
 };
 
+// State centers for zoom-to-state
+const STATE_CENTERS: Record<string, { center: [number, number]; zoom: number }> = {
+  OH: { center: [-82.7, 40.2], zoom: 3.5 },
+  PA: { center: [-77.5, 41.0], zoom: 3.0 },
+  WV: { center: [-80.5, 38.8], zoom: 3.5 },
+  KY: { center: [-84.5, 37.8], zoom: 3.0 },
+  IN: { center: [-86.1, 40.0], zoom: 3.0 },
+  MI: { center: [-84.5, 44.0], zoom: 2.5 },
+};
+
 const CITIES = [
   { name: "Columbus",     coordinates: [-82.9988, 39.9612] as [number, number], state: "OH", size: "large" },
   { name: "Cleveland",    coordinates: [-81.6944, 41.4993] as [number, number], state: "OH", size: "large" },
@@ -34,9 +44,7 @@ const CITIES = [
   { name: "Pittsburgh",   coordinates: [-79.9959, 40.4406] as [number, number], state: "PA", size: "large" },
   { name: "Indianapolis", coordinates: [-86.1581, 39.7684] as [number, number], state: "IN", size: "large" },
   { name: "Fort Wayne",   coordinates: [-85.1394, 41.0793] as [number, number], state: "IN", size: "medium" },
-  { name: "Detroit",      coordinates: [-83.0458, 42.3314] as [number, number], state: "MI", size: "large" },
   { name: "Louisville",   coordinates: [-85.7585, 38.2527] as [number, number], state: "KY", size: "large" },
-  { name: "Lexington",    coordinates: [-84.5037, 38.0406] as [number, number], state: "KY", size: "medium" },
   { name: "Charleston",   coordinates: [-81.6326, 38.3498] as [number, number], state: "WV", size: "large" },
 ];
 
@@ -52,13 +60,9 @@ interface MultiStateMapSVGProps {
   className?: string;
 }
 
-// --- Clustering logic ---
-// At a given zoom level, group taverns whose projected coordinates are within
-// CLUSTER_RADIUS degrees of each other. We work in lon/lat space (cheap enough
-// for this density of points).
+// Cluster radius scales aggressively with zoom so pins split apart quickly
 function clusterTaverns(taverns: Tavern[], zoom: number) {
-  // Radius shrinks as zoom increases — tighter cluster radius at high zoom
-  const radius = 1.2 / zoom;
+  const radius = 0.6 / zoom; // tighter than before — splits at lower zoom level
 
   const visited = new Set<string>();
   const clusters: { taverns: Tavern[]; lon: number; lat: number }[] = [];
@@ -78,7 +82,6 @@ function clusterTaverns(taverns: Tavern[], zoom: number) {
       }
     }
 
-    // Centre of the cluster = average lon/lat
     const lon = group.reduce((s, g) => s + g.longitude, 0) / group.length;
     const lat = group.reduce((s, g) => s + g.latitude, 0) / group.length;
     clusters.push({ taverns: group, lon, lat });
@@ -103,22 +106,31 @@ function MultiStateMapSVGComponent({
   const [zoom, setZoom] = useState(1);
   const [center, setCenter] = useState<[number, number]>([-83.0, 40.0]);
 
-  const handleZoomIn  = () => setZoom(prev => Math.min(prev * 1.6, 12));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.6, 1));
+  const handleZoomIn  = () => setZoom(prev => Math.min(prev * 1.8, 16));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.8, 1));
   const handleReset   = () => { setZoom(1); setCenter([-83.0, 40.0]); };
 
-  // Valid taverns only
+  // Zoom into a state when clicked
+  const handleStateClick = useCallback((stateAbbr: string) => {
+    onStateClick(stateAbbr);
+    const target = STATE_CENTERS[stateAbbr];
+    if (target) {
+      setCenter(target.center);
+      setZoom(target.zoom);
+    }
+  }, [onStateClick]);
+
   const validTaverns = useMemo(() =>
     taverns.filter(t =>
       typeof t.latitude  === "number" && !isNaN(t.latitude)  && t.latitude  >= 24 && t.latitude  <= 50 &&
       typeof t.longitude === "number" && !isNaN(t.longitude) && t.longitude >= -125 && t.longitude <= -66
     ), [taverns]);
 
-  // Re-cluster whenever zoom or tavern list changes
   const clusters = useMemo(() => clusterTaverns(validTaverns, zoom), [validTaverns, zoom]);
-
-  // Is any cluster/tavern active?
   const activeClusterIdx = clusters.findIndex(c => c.taverns.some(t => t.id === activeTavernId));
+
+  // Pin size scales with zoom — small dots at low zoom, readable at high zoom
+  const pinScale = Math.min(1, Math.max(0.45, zoom * 0.28));
 
   return (
     <div className={`relative w-full h-full ${className}`}>
@@ -152,9 +164,9 @@ function MultiStateMapSVGComponent({
         </button>
       </div>
 
-      {/* Zoom hint */}
-      <div className="absolute bottom-14 right-4 z-10 text-xs text-muted-foreground/50 hidden lg:block">
-        Scroll to zoom · Drag to pan
+      {/* Hint */}
+      <div className="absolute bottom-14 right-4 z-10 text-xs text-muted-foreground/40 hidden lg:block select-none">
+        Click a state to zoom · Scroll to zoom · Drag to pan
       </div>
 
       <ComposableMap
@@ -166,7 +178,7 @@ function MultiStateMapSVGComponent({
           center={center}
           zoom={zoom}
           minZoom={0.8}
-          maxZoom={12}
+          maxZoom={16}
           onMoveEnd={({ coordinates, zoom: z }) => {
             setCenter(coordinates as [number, number]);
             setZoom(z);
@@ -209,7 +221,7 @@ function MultiStateMapSVGComponent({
                     geography={geo}
                     onMouseEnter={() => setHoveredState(stateAbbr)}
                     onMouseLeave={() => setHoveredState(null)}
-                    onClick={() => onStateClick(stateAbbr)}
+                    onClick={() => handleStateClick(stateAbbr)}
                     style={{
                       default: { fill: fillColor, stroke: strokeColor, strokeWidth, outline: "none", cursor: "pointer", transition: "all 0.2s" },
                       hover:   { fill: isOhio ? "rgba(217, 165, 75, 0.5)" : "rgba(217, 165, 75, 0.35)", stroke: "rgba(217, 165, 75, 0.9)", strokeWidth: isOhio ? 1.2 : 1, outline: "none", cursor: "pointer" },
@@ -221,22 +233,22 @@ function MultiStateMapSVGComponent({
             }
           </Geographies>
 
-          {/* Lake Erie label */}
+          {/* Lake Erie */}
           <Marker coordinates={[-81.5, 41.8]}>
-            <text textAnchor="middle" fill="rgba(100,160,200,0.4)" fontSize={8} fontFamily="system-ui" fontStyle="italic" fontWeight={500} style={{ pointerEvents: "none" }}>
+            <text textAnchor="middle" fill="rgba(100,160,200,0.35)" fontSize={7} fontFamily="system-ui" fontStyle="italic" fontWeight={500} style={{ pointerEvents: "none" }}>
               Lake Erie
             </text>
           </Marker>
 
-          {/* City dots */}
-          {CITIES.map((city) => {
-            const dotSize  = city.size === "large" ? 2.5 : city.size === "medium" ? 2 : 1.5;
-            const fontSize = city.size === "large" ? 6 : city.size === "medium" ? 5 : 4.2;
+          {/* City dots — only show at higher zoom levels */}
+          {zoom >= 1.5 && CITIES.map((city) => {
+            const dotSize  = city.size === "large" ? 2 : city.size === "medium" ? 1.5 : 1.2;
+            const fontSize = city.size === "large" ? 5.5 : city.size === "medium" ? 4.5 : 3.8;
             const isOhio   = city.state === "OH";
             return (
               <Marker key={city.name} coordinates={city.coordinates}>
-                <circle r={dotSize} fill={isOhio ? "rgba(217,165,75,0.8)" : "rgba(217,165,75,0.5)"} stroke="rgba(217,165,75,0.9)" strokeWidth={0.4} />
-                <text textAnchor="middle" y={-dotSize - 3} fill={isOhio ? "rgba(245,235,220,0.9)" : "rgba(200,190,175,0.7)"} fontSize={fontSize} fontFamily="system-ui" fontWeight={city.size === "large" ? 700 : 600} style={{ pointerEvents: "none" }}>
+                <circle r={dotSize} fill={isOhio ? "rgba(217,165,75,0.7)" : "rgba(217,165,75,0.4)"} stroke="rgba(217,165,75,0.6)" strokeWidth={0.3} />
+                <text textAnchor="middle" y={-dotSize - 2} fill={isOhio ? "rgba(245,235,220,0.8)" : "rgba(200,190,175,0.55)"} fontSize={fontSize} fontFamily="system-ui" fontWeight={city.size === "large" ? 700 : 600} style={{ pointerEvents: "none" }}>
                   {city.name}
                 </text>
               </Marker>
@@ -253,80 +265,77 @@ function MultiStateMapSVGComponent({
             { abbr: "MI", coords: [-84.5, 43.8] as [number, number], isMain: false },
           ].map(({ abbr, coords, isMain }) => (
             <Marker key={abbr} coordinates={coords}>
-              <text textAnchor="middle" fill={isMain ? "rgba(35,30,25,0.8)" : "rgba(217,165,75,0.4)"} fontSize={isMain ? 12 : 9} fontFamily="system-ui" fontWeight={800} letterSpacing="0.1em" style={{ pointerEvents: "none" }}>
+              <text textAnchor="middle" fill={isMain ? "rgba(35,30,25,0.7)" : "rgba(217,165,75,0.35)"} fontSize={isMain ? 11 : 8} fontFamily="system-ui" fontWeight={800} letterSpacing="0.1em" style={{ pointerEvents: "none" }}>
                 {abbr}
               </text>
             </Marker>
           ))}
 
-          {/* Clustered tavern pins */}
+          {/* Pins */}
           {clusters.map((cluster, idx) => {
-            const isSingle   = cluster.taverns.length === 1;
-            const tavern     = cluster.taverns[0];
-            const isActive   = isSingle ? activeTavernId === tavern.id : activeClusterIdx === idx;
-            const isHovered  = hoveredClusterIdx === idx;
-            const allApproved = cluster.taverns.every(t => t.dude_approved);
+            const isSingle  = cluster.taverns.length === 1;
+            const tavern    = cluster.taverns[0];
+            const isActive  = isSingle ? activeTavernId === tavern.id : activeClusterIdx === idx;
+            const isHovered = hoveredClusterIdx === idx;
             const anyApproved = cluster.taverns.some(t => t.dude_approved);
             const coords: [number, number] = [cluster.lon, cluster.lat];
 
-            // Cluster bubble
+            // --- CLUSTER BUBBLE ---
             if (!isSingle) {
-              const r = 9;
+              const r = 7 * pinScale;
+              const fontSize = Math.max(4, 6 * pinScale);
               return (
                 <Marker
                   key={`cluster-${idx}`}
                   coordinates={coords}
                   onClick={() => {
-                    // If clicking a cluster, select the first tavern and let the
-                    // sidebar show them — user can also zoom in to split the cluster
                     onTavernClick(tavern.id);
+                    // Zoom in to split
+                    setZoom(prev => Math.min(prev * 2.5, 16));
+                    setCenter(coords);
                   }}
                   onMouseEnter={() => setHoveredClusterIdx(idx)}
                   onMouseLeave={() => setHoveredClusterIdx(null)}
                   style={{ cursor: "pointer" }}
                 >
-                  {/* Outer glow ring */}
+                  {/* Outer ring */}
                   <circle
-                    r={r + 4}
-                    fill={anyApproved ? "rgba(217,165,75,0.15)" : "rgba(217,165,75,0.08)"}
-                    stroke={anyApproved ? "rgba(217,165,75,0.5)" : "rgba(217,165,75,0.25)"}
-                    strokeWidth={0.8}
+                    r={r + 3 * pinScale}
+                    fill="rgba(217,165,75,0.1)"
+                    stroke={anyApproved ? "rgba(217,165,75,0.4)" : "rgba(217,165,75,0.2)"}
+                    strokeWidth={0.6}
                   />
-                  {/* Main bubble */}
+                  {/* Main circle */}
                   <circle
                     r={r}
-                    fill={isActive || isHovered
-                      ? (anyApproved ? "#d9a54b" : "#444038")
-                      : (anyApproved ? "rgba(217,165,75,0.85)" : "rgba(40,36,30,0.95)")}
-                    stroke={anyApproved ? "#f5b942" : "rgba(217,165,75,0.7)"}
-                    strokeWidth={isActive ? 1.5 : 1}
-                    style={{ filter: isActive ? "drop-shadow(0 0 5px rgba(217,165,75,0.7))" : "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
+                    fill={isHovered
+                      ? (anyApproved ? "#d9a54b" : "#3a3630")
+                      : (anyApproved ? "rgba(217,165,75,0.9)" : "rgba(35,32,28,0.97)")}
+                    stroke={anyApproved ? "#f5b942" : "rgba(217,165,75,0.6)"}
+                    strokeWidth={isHovered ? 1.2 : 0.8}
+                    style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))" }}
                   />
-                  {/* Count */}
                   <text
                     textAnchor="middle"
-                    y={3.5}
-                    fill={isActive || isHovered
+                    y={fontSize * 0.35}
+                    fill={isHovered
                       ? (anyApproved ? "#1e1c1a" : "#d9a54b")
                       : (anyApproved ? "#1e1c1a" : "#d9a54b")}
-                    fontSize={7}
+                    fontSize={fontSize}
                     fontWeight={900}
-                    fontFamily="system-ui, -apple-system, sans-serif"
+                    fontFamily="system-ui, sans-serif"
                     style={{ pointerEvents: "none" }}
                   >
                     {cluster.taverns.length}
                   </text>
 
-                  {/* Hover tooltip */}
-                  {isHovered && (
-                    <g transform="translate(0, -22)">
-                      <rect x={-52} y={-18} width={104} height={16} rx={3} fill="rgba(0,0,0,0.92)" />
-                      <polygon points="-5,0 5,0 0,5" fill="rgba(0,0,0,0.92)" />
-                      <text textAnchor="middle" y={-9} fill="white" fontSize={5.5} fontWeight={700} fontFamily="system-ui" style={{ pointerEvents: "none" }}>
-                        {cluster.taverns.length} stops · zoom in to split
-                      </text>
-                      <text textAnchor="middle" y={-3} fill="rgba(217,165,75,0.8)" fontSize={4.5} fontFamily="system-ui" style={{ pointerEvents: "none" }}>
-                        {cluster.taverns.map(t => `#${t.stop_number}`).join(" · ")}
+                  {/* Tooltip on hover */}
+                  {isHovered && zoom < 8 && (
+                    <g transform={`translate(0, ${-(r + 14)})`}>
+                      <rect x={-42} y={-14} width={84} height={13} rx={2} fill="rgba(0,0,0,0.9)" />
+                      <polygon points="-4,0 4,0 0,4" fill="rgba(0,0,0,0.9)" />
+                      <text textAnchor="middle" y={-5} fill="white" fontSize={4.5} fontWeight={700} fontFamily="system-ui" style={{ pointerEvents: "none" }}>
+                        {cluster.taverns.length} stops — click to zoom in
                       </text>
                     </g>
                   )}
@@ -334,7 +343,11 @@ function MultiStateMapSVGComponent({
               );
             }
 
-            // Single pin — clean teardrop design
+            // --- SINGLE PIN ---
+            // Dot size scales with zoom — tiny at zoom 1, full size at zoom 4+
+            const dotR   = Math.max(3.5, 8 * pinScale);
+            const isLargeEnough = dotR > 5.5;
+
             return (
               <Marker
                 key={tavern.id}
@@ -344,69 +357,80 @@ function MultiStateMapSVGComponent({
                 onMouseLeave={() => { onTavernHover(null); setHoveredClusterIdx(null); }}
                 style={{ cursor: "pointer" }}
               >
-                {/* Active pulse ring */}
+                {/* Active pulse */}
                 {isActive && (
-                  <circle r={14} fill="none" stroke="rgba(217,165,75,0.4)" strokeWidth={2} className="animate-ping" />
+                  <circle r={dotR + 6} fill="none" stroke="rgba(217,165,75,0.35)" strokeWidth={1.5} />
                 )}
 
-                <g
-                  transform={`scale(${isActive ? 1.25 : isHovered ? 1.12 : 1})`}
-                  style={{ transition: "transform 0.15s ease-out", transformOrigin: "0 0" }}
-                >
-                  {/* Drop shadow */}
-                  <ellipse cx={0} cy={10} rx={5} ry={2} fill="rgba(0,0,0,0.35)" />
+                {/* Pin dot */}
+                <circle
+                  r={isActive ? dotR * 1.3 : isHovered ? dotR * 1.15 : dotR}
+                  fill={
+                    tavern.dude_approved
+                      ? isActive ? "#f5c55a" : isHovered ? "#edb83a" : "#d9a54b"
+                      : isActive ? "#4a4540" : isHovered ? "#3a3530" : "rgba(30,27,23,0.97)"
+                  }
+                  stroke={tavern.dude_approved ? "#f5b942" : "rgba(217,165,75,0.75)"}
+                  strokeWidth={isActive ? 1.5 : 0.9}
+                  style={{
+                    filter: isActive
+                      ? "drop-shadow(0 0 5px rgba(217,165,75,0.6))"
+                      : "drop-shadow(0 1px 3px rgba(0,0,0,0.55))",
+                    transition: "r 0.1s ease-out",
+                  }}
+                />
 
-                  {/* Pin body — teardrop */}
-                  <path
-                    d="M0,-14 C-7,-14 -11,-8 -11,-2 C-11,4 0,12 0,12 C0,12 11,4 11,-2 C11,-8 7,-14 0,-14 Z"
-                    fill={
-                      tavern.dude_approved
-                        ? isActive ? "#f5c55a" : isHovered ? "#edb83a" : "#d9a54b"
-                        : isActive ? "#3a3630" : isHovered ? "#322e28" : "rgba(28,26,22,0.97)"
-                    }
-                    stroke={tavern.dude_approved ? "#f5b942" : "rgba(217,165,75,0.8)"}
-                    strokeWidth={isActive ? 1.8 : 1.2}
-                    style={{
-                      filter: isActive
-                        ? "drop-shadow(0 0 6px rgba(217,165,75,0.7))"
-                        : "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
-                    }}
-                  />
-
-                  {/* Stop number */}
+                {/* Stop number — only show when pin is big enough */}
+                {isLargeEnough && (
                   <text
                     textAnchor="middle"
-                    y={-2}
+                    y={dotR * 0.38}
                     fill={tavern.dude_approved ? "#1e1c1a" : "#d9a54b"}
-                    fontSize={tavern.stop_number && tavern.stop_number > 99 ? 5.5 : 6.5}
+                    fontSize={Math.max(3.5, dotR * 0.85)}
                     fontWeight={900}
-                    fontFamily="system-ui, -apple-system, sans-serif"
+                    fontFamily="system-ui, sans-serif"
                     style={{ pointerEvents: "none" }}
                   >
                     {tavern.stop_number}
                   </text>
+                )}
 
-                  {/* Dude Approved check badge */}
-                  {tavern.dude_approved && (
-                    <g transform="translate(8, -18)">
-                      <circle r={6} fill="white" stroke="#f5b942" strokeWidth={1.5} style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.4))" }} />
-                      <path d="M-2.5,0.5 L-0.5,2.5 L3,-1.5" fill="none" stroke="#1a7a3c" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-                    </g>
-                  )}
-                </g>
-
-                {/* Hover / active name tooltip */}
-                {(isActive || isHovered) && (
-                  <g transform="translate(0, -32)">
-                    <rect
-                      x={-55} y={-20} width={110} height={19} rx={3}
-                      fill={isActive ? "#d9a54b" : "rgba(10,9,8,0.93)"}
+                {/* Dude Approved badge — only at higher zoom */}
+                {tavern.dude_approved && isLargeEnough && (
+                  <g transform={`translate(${dotR * 0.85}, ${-dotR * 0.85})`}>
+                    <circle r={dotR * 0.55} fill="white" stroke="#f5b942" strokeWidth={0.8} />
+                    <path
+                      d={`M${-dotR*0.25},${dotR*0.05} L${-dotR*0.05},${dotR*0.28} L${dotR*0.3},${-dotR*0.2}`}
+                      fill="none"
+                      stroke="#1a7a3c"
+                      strokeWidth={dotR * 0.18}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
-                    <polygon points="-5,0 5,0 0,5" fill={isActive ? "#d9a54b" : "rgba(10,9,8,0.93)"} />
-                    <text textAnchor="middle" y={-10} fill={isActive ? "#1e1c1a" : "white"} fontSize={6} fontWeight={700} fontFamily="system-ui" style={{ pointerEvents: "none" }}>
-                      {tavern.name.length > 22 ? tavern.name.slice(0, 20) + "…" : tavern.name}
+                  </g>
+                )}
+
+                {/* Tooltip */}
+                {(isActive || isHovered) && (
+                  <g transform={`translate(0, ${-(dotR + 16)})`}>
+                    <rect x={-50} y={-18} width={100} height={17} rx={2.5}
+                      fill={isActive ? "#d9a54b" : "rgba(8,7,6,0.95)"}
+                    />
+                    <polygon points="-4,0 4,0 0,4"
+                      fill={isActive ? "#d9a54b" : "rgba(8,7,6,0.95)"}
+                    />
+                    <text textAnchor="middle" y={-9}
+                      fill={isActive ? "#1e1c1a" : "white"}
+                      fontSize={5.5} fontWeight={700} fontFamily="system-ui"
+                      style={{ pointerEvents: "none" }}
+                    >
+                      {tavern.name.length > 22 ? tavern.name.slice(0, 21) + "…" : tavern.name}
                     </text>
-                    <text textAnchor="middle" y={-3} fill={isActive ? "rgba(30,28,26,0.7)" : "rgba(217,165,75,0.8)"} fontSize={4.5} fontFamily="system-ui" style={{ pointerEvents: "none" }}>
+                    <text textAnchor="middle" y={-3}
+                      fill={isActive ? "rgba(30,28,26,0.65)" : "rgba(217,165,75,0.85)"}
+                      fontSize={4} fontFamily="system-ui"
+                      style={{ pointerEvents: "none" }}
+                    >
                       #{tavern.stop_number} · {tavern.city}, {tavern.state}
                     </text>
                   </g>
@@ -420,9 +444,10 @@ function MultiStateMapSVGComponent({
 
       {/* State hover label */}
       {hoveredState && (
-        <div className="absolute top-3 right-14 px-3 py-1.5 bg-darker-wood/95 backdrop-blur-sm border border-amber/40 rounded text-sm shadow-lg z-20">
+        <div className="absolute top-3 right-14 px-3 py-1.5 bg-darker-wood/95 backdrop-blur-sm border border-amber/40 rounded text-sm shadow-lg z-20 pointer-events-none">
           <span className="text-amber font-bold">{hoveredState}</span>
-          <span className="text-muted-foreground ml-2">{STATE_NAMES[hoveredState]}</span>
+          <span className="text-muted-foreground ml-2 text-xs">{STATE_NAMES[hoveredState]}</span>
+          <span className="text-muted-foreground/50 ml-2 text-xs">· click to zoom</span>
         </div>
       )}
 
