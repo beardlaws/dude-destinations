@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { SUPPORTED_STATES, STATE_NAMES } from "@/lib/map-utils";
 import DudeApprovedBadge, { DudeApprovedIndicator } from "@/components/dude-approved-badge";
-import MapboxMap from "@/components/mapbox-map";
+import { MultiStateMapSVG } from "@/components/multi-state-map-svg";
 import type { Tavern } from "@/lib/tavern-service";
 
 // Tavern categories for filtering
@@ -169,6 +169,16 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
       activeEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [activeTavernId]);
+
+  // Listen for category filter events from CategoriesSection
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setActiveFilter(customEvent.detail.category);
+    };
+    window.addEventListener('dude-filter-category', handler);
+    return () => window.removeEventListener('dude-filter-category', handler);
+  }, []);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -439,17 +449,19 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
               <div className="flex flex-wrap gap-2">
                 {tavernCategories.map((cat) => (
                   <button
-                    key={cat}
+                    key={cat.id}
                     onClick={() =>
-                      setActiveFilter(activeFilter === cat ? null : cat)
+                      setActiveFilter(
+                        activeFilter === cat.label ? null : cat.label
+                      )
                     }
                     className={`px-4 py-2 rounded-sm text-sm font-semibold transition-all border ${
-                      activeFilter === cat
+                      activeFilter === cat.label
                         ? "bg-amber border-amber text-darker-wood"
                         : "bg-background/30 border-border/50 text-muted-foreground hover:border-amber/50 hover:text-foreground"
                     }`}
                   >
-                    {cat}
+                    {cat.label}
                   </button>
                 ))}
               </div>
@@ -481,11 +493,15 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
             aria-hidden="true"
           />
 
-          {/* Mapbox map */}
+          {/* Multi-state map SVG with pins */}
           <div className="absolute inset-0">
-            <MapboxMap
+            <MultiStateMapSVG
+              activeState={activeState === "All States" ? null : activeState}
+              onStateClick={(state) => setActiveState(state === activeState ? "All States" : state)}
+              highlightedStates={statesWithTaverns}
               taverns={filteredTaverns}
               activeTavernId={activeTavernId}
+              hoveredPinId={hoveredPinId}
               onTavernClick={setActiveTavernId}
               onTavernHover={setHoveredPinId}
             />
@@ -767,4 +783,3 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
     </section>
   );
 }
-
