@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Play, Calendar, Youtube, Facebook } from "lucide-react";
+import { MapPin, Play, Calendar, Youtube, Facebook, BookOpen } from "lucide-react";
 import { getTavernsWithVideos, type Tavern } from "@/lib/tavern-service";
 
 // TikTok icon component
@@ -84,6 +84,24 @@ function FeaturedVideoCard({ tavern }: { tavern: Tavern }) {
           <p className="text-sm text-white/70 mt-2 leading-relaxed line-clamp-2 max-w-lg">
             {tavern.short_description}
           </p>
+          <div className="flex gap-3 mt-4">
+            <Link
+              href={`/taverns/${tavern.slug}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber text-darker-wood text-xs font-bold uppercase tracking-wider rounded-sm hover:bg-amber-bright transition-colors"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Read Full Story
+            </Link>
+            <Link
+              href={tavern.video_url || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 text-white text-xs font-bold uppercase tracking-wider rounded-sm hover:bg-white/20 transition-colors border border-white/20"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Watch Video
+            </Link>
+          </div>
         </div>
       </div>
     </article>
@@ -156,9 +174,9 @@ function VideoCard({ tavern }: { tavern: Tavern }) {
             </span>
           </div>
         </div>
-        <h3 className="text-sm font-bold text-foreground leading-snug line-clamp-2 group-hover:text-amber transition-colors">
+        <Link href={`/taverns/${tavern.slug}`} className="text-sm font-bold text-foreground leading-snug line-clamp-2 hover:text-amber transition-colors block">
           {tavern.video_title || tavern.name}
-        </h3>
+        </Link>
         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-auto">
           <div className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
@@ -262,3 +280,4 @@ export default async function VideoReviewsSection() {
     </section>
   );
 }
+
