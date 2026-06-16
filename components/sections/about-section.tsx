@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import { MapPin, Play } from "lucide-react";
 import Link from "next/link";
@@ -8,7 +10,7 @@ interface AboutSectionProps {
 }
 
 export default function AboutSection({ stats }: AboutSectionProps) {
-  const stopCount = stats?.totalStops ?? 27;
+  const stopCount = stats?.total ?? 27;
 
   return (
     <section id="about" className="py-16 lg:py-24 bg-dark-wood border-t border-border">
@@ -76,13 +78,13 @@ export default function AboutSection({ stats }: AboutSectionProps) {
               ))}
             </div>
 
-            <Link
-              href="#reviews"
-              className="inline-flex items-center gap-2 mt-8 px-6 py-3 bg-amber text-darker-wood font-bold uppercase tracking-wider text-sm rounded-sm hover:bg-amber-bright transition-colors shadow-md shadow-amber/20"
+            <button
+              onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center gap-2 mt-8 px-6 py-3 bg-amber text-darker-wood font-bold uppercase tracking-wider text-sm rounded-sm hover:bg-amber-bright transition-colors shadow-md shadow-amber/20 cursor-pointer"
             >
               <Play className="w-4 h-4 fill-current" />
               Watch Latest Reviews
-            </Link>
+            </button>
           </div>
         </div>
       </div>
