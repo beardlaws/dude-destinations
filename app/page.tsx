@@ -14,7 +14,6 @@ import { getTaverns, getTavernStats, getRegions } from '@/lib/tavern-service'
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  // Fetch all data from Supabase
   const [taverns, stats, regions] = await Promise.all([
     getTaverns(),
     getTavernStats(),
@@ -24,21 +23,18 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-
       <main>
         <HeroSection />
         <StatsBar stats={stats} />
         <MapSection taverns={taverns} stats={stats} regions={regions} />
         <FeaturedTaverns taverns={taverns} />
-        <VideoReviewsSection taverns={taverns} />
+        <VideoReviewsSection />
         <CategoriesSection taverns={taverns} />
         <SubmitSection />
-        <AboutSection />
+        <AboutSection stats={stats} />
         <EmailSignupSection />
       </main>
-
       <SiteFooter />
     </div>
   )
 }
-
