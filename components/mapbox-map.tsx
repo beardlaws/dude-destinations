@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import type { Tavern } from "@/lib/tavern-service";
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZHVkZWRlc3RpbmF0aW9ucyIsImEiOiJjbXFmZ2lndmYxcDlkMnJwcjN1azcxaHZzIn0.btO8HxiO3JVgSuETuCUxmw";
-
-// Dark amber tavern map style
-const MAP_STYLE = "mapbox://styles/mapbox/dark-v11";
 
 interface MapboxMapProps {
   taverns: Tavern[];
@@ -23,274 +20,324 @@ export default function MapboxMap({
   onTavernHover,
   className = "",
 }: MapboxMapProps) {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const markersRef = useRef<Map<string, any>>(new Map());
-  const popupRef = useRef<any>(null);
+  const mapLoadedRef = useRef(false);
 
-  // Initialize map
+  // Build GeoJSON from taverns
+  const buildGeoJSON = (taverns: Tavern[]) => ({
+    type: "FeatureCollection" as const,
+    features: taverns
+      .filter(t =>
+        typeof t.latitude === "number" && !isNaN(t.latitude) &&
+        typeof t.longitude === "number" && !isNaN(t.longitude) &&
+        t.latitude >= 24 && t.latitude <= 50 &&
+        t.longitude >= -125 && t.longitude <= -66
+      )
+      .map(t => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [t.longitude, t.latitude] },
+        properties: {
+          id: t.id,
+          name: t.name,
+          city: t.city,
+          state: t.state,
+          stop_number: t.stop_number ?? 0,
+          dude_approved: t.dude_approved ? 1 : 0,
+          is_active: t.id === activeTavernId ? 1 : 0,
+        },
+      })),
+  });
+
+  // Initialize map once
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
 
-    let mapboxgl: any;
+    let cancelled = false;
 
-    const initMap = async () => {
-      try {
-        mapboxgl = (await import("mapbox-gl")).default;
-        await import("mapbox-gl/dist/mapbox-gl.css");
+    (async () => {
+      const mapboxgl = (await import("mapbox-gl")).default;
+      await import("mapbox-gl/dist/mapbox-gl.css");
+      if (cancelled) return;
 
-        mapboxgl.accessToken = MAPBOX_TOKEN;
+      mapboxgl.accessToken = MAPBOX_TOKEN;
 
-        const map = new mapboxgl.Map({
-          container: mapContainerRef.current!,
-          style: MAP_STYLE,
-          center: [-82.5, 40.3],
-          zoom: 7.2,
-          minZoom: 5.5,
-          maxZoom: 18,
-          maxBounds: [
-            [-95, 35],  // SW corner - keeps map from wandering too far
-            [-70, 47],  // NE corner
-          ],
+      const map = new mapboxgl.Map({
+        container: containerRef.current!,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [-82.5, 40.3],
+        zoom: 7,
+        minZoom: 4,
+        maxZoom: 18,
+      });
+
+      mapRef.current = map;
+
+      // Custom styled nav controls
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+
+      // Popup
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 20,
+      });
+
+      map.on("load", () => {
+        if (cancelled) return;
+        mapLoadedRef.current = true;
+
+        // Add GeoJSON source with clustering
+        map.addSource("taverns", {
+          type: "geojson",
+          data: buildGeoJSON(taverns),
+          cluster: true,
+          clusterMaxZoom: 11,
+          clusterRadius: 50,
         });
 
-        mapRef.current = map;
+        // --- CLUSTER CIRCLES ---
+        map.addLayer({
+          id: "clusters",
+          type: "circle",
+          source: "taverns",
+          filter: ["has", "point_count"],
+          paint: {
+            "circle-color": [
+              "step", ["get", "point_count"],
+              "#d9a54b", 5,
+              "#c4922e", 10,
+              "#b07d1a"
+            ],
+            "circle-radius": [
+              "step", ["get", "point_count"],
+              20, 5,
+              26, 10,
+              32
+            ],
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#f5b942",
+            "circle-opacity": 0.92,
+          },
+        });
 
-        // Custom amber navigation controls
-        map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+        // --- CLUSTER COUNT LABELS ---
+        map.addLayer({
+          id: "cluster-count",
+          type: "symbol",
+          source: "taverns",
+          filter: ["has", "point_count"],
+          layout: {
+            "text-field": "{point_count_abbreviated}",
+            "text-font": ["DIN Offc Pro Bold", "Arial Unicode MS Bold"],
+            "text-size": 14,
+          },
+          paint: {
+            "text-color": "#1e1c1a",
+          },
+        });
 
-        map.on("load", () => {
-          // Override map background to match site dark wood theme
-          map.setPaintProperty("background", "background-color", "#1a1710");
+        // --- INDIVIDUAL PINS (unclustered) ---
+        // Dark pin for non-approved
+        map.addLayer({
+          id: "unclustered-pin",
+          type: "circle",
+          source: "taverns",
+          filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "dude_approved"], 0]],
+          paint: {
+            "circle-color": [
+              "case", ["==", ["get", "is_active"], 1], "#4a4540", "#1e1b17"
+            ],
+            "circle-radius": [
+              "case", ["==", ["get", "is_active"], 1], 18, 15
+            ],
+            "circle-stroke-width": [
+              "case", ["==", ["get", "is_active"], 1], 2.5, 1.5
+            ],
+            "circle-stroke-color": "rgba(217,165,75,0.8)",
+            "circle-opacity": 0.95,
+          },
+        });
 
-          // Add Ohio highlight layer
-          map.addSource("ohio", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              geometry: {
-                type: "Point",
-                coordinates: [-82.9, 40.4],
-              },
-              properties: {},
-            },
+        // Amber pin for dude-approved
+        map.addLayer({
+          id: "unclustered-pin-approved",
+          type: "circle",
+          source: "taverns",
+          filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "dude_approved"], 1]],
+          paint: {
+            "circle-color": [
+              "case", ["==", ["get", "is_active"], 1], "#f5c55a", "#d9a54b"
+            ],
+            "circle-radius": [
+              "case", ["==", ["get", "is_active"], 1], 18, 15
+            ],
+            "circle-stroke-width": [
+              "case", ["==", ["get", "is_active"], 1], 2.5, 1.5
+            ],
+            "circle-stroke-color": "#f5b942",
+            "circle-opacity": 0.95,
+          },
+        });
+
+        // --- STOP NUMBER LABELS ---
+        map.addLayer({
+          id: "pin-labels",
+          type: "symbol",
+          source: "taverns",
+          filter: ["!", ["has", "point_count"]],
+          layout: {
+            "text-field": ["to-string", ["get", "stop_number"]],
+            "text-font": ["DIN Offc Pro Bold", "Arial Unicode MS Bold"],
+            "text-size": 11,
+            "text-allow-overlap": true,
+            "text-ignore-placement": true,
+          },
+          paint: {
+            "text-color": [
+              "case",
+              ["==", ["get", "dude_approved"], 1], "#1e1c1a",
+              "#d9a54b"
+            ],
+          },
+        });
+
+        // --- ACTIVE PULSE RING ---
+        map.addLayer({
+          id: "active-ring",
+          type: "circle",
+          source: "taverns",
+          filter: ["==", ["get", "is_active"], 1],
+          paint: {
+            "circle-color": "transparent",
+            "circle-radius": 26,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "rgba(217,165,75,0.45)",
+            "circle-opacity": 0,
+          },
+        });
+
+        // --- INTERACTIONS ---
+
+        // Click cluster → zoom in
+        map.on("click", "clusters", (e: any) => {
+          const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
+          if (!features.length) return;
+          const clusterId = features[0].properties.cluster_id;
+          (map.getSource("taverns") as any).getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
+            if (err) return;
+            map.easeTo({ center: features[0].geometry.coordinates, zoom });
           });
         });
 
-        // Popup instance
-        popupRef.current = new mapboxgl.Popup({
-          closeButton: false,
-          closeOnClick: false,
-          offset: 25,
-          className: "dude-popup",
-        });
+        // Click individual pin
+        const handlePinClick = (e: any) => {
+          if (!e.features?.length) return;
+          const props = e.features[0].properties;
+          onTavernClick(props.id);
+        };
+        map.on("click", "unclustered-pin", handlePinClick);
+        map.on("click", "unclustered-pin-approved", handlePinClick);
+        map.on("click", "pin-labels", handlePinClick);
 
-      } catch (err) {
-        console.error("Mapbox init error:", err);
-      }
-    };
+        // Hover popup
+        const handleMouseEnter = (e: any) => {
+          if (!e.features?.length) return;
+          map.getCanvas().style.cursor = "pointer";
+          const props = e.features[0].properties;
+          const coords = e.features[0].geometry.coordinates.slice();
+          onTavernHover(props.id);
+          popup
+            .setLngLat(coords)
+            .setHTML(`
+              <div style="font-family:system-ui,sans-serif">
+                <div style="font-weight:800;font-size:13px;color:#fff;margin-bottom:3px;max-width:200px">${props.name}</div>
+                <div style="font-size:11px;color:rgba(217,165,75,0.9)">Stop #${props.stop_number} · ${props.city}, ${props.state}</div>
+              </div>
+            `)
+            .addTo(map);
+        };
 
-    initMap();
+        const handleMouseLeave = () => {
+          map.getCanvas().style.cursor = "";
+          onTavernHover(null);
+          popup.remove();
+        };
+
+        map.on("mouseenter", "unclustered-pin", handleMouseEnter);
+        map.on("mouseenter", "unclustered-pin-approved", handleMouseEnter);
+        map.on("mouseenter", "pin-labels", handleMouseEnter);
+        map.on("mouseenter", "clusters", () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", "unclustered-pin", handleMouseLeave);
+        map.on("mouseleave", "unclustered-pin-approved", handleMouseLeave);
+        map.on("mouseleave", "pin-labels", handleMouseLeave);
+        map.on("mouseleave", "clusters", () => { map.getCanvas().style.cursor = ""; });
+      });
+    })();
 
     return () => {
+      cancelled = true;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        mapLoadedRef.current = false;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Add/update markers when taverns change
+  // Update GeoJSON data when taverns or active selection changes
   useEffect(() => {
-    if (!mapRef.current) return;
-
-    let mapboxgl: any;
-
-    const updateMarkers = async () => {
-      try {
-        mapboxgl = (await import("mapbox-gl")).default;
-        mapboxgl.accessToken = MAPBOX_TOKEN;
-
-        const map = mapRef.current;
-        const currentIds = new Set(taverns.map(t => t.id));
-
-        // Remove markers no longer in list
-        markersRef.current.forEach((marker, id) => {
-          if (!currentIds.has(id)) {
-            marker.remove();
-            markersRef.current.delete(id);
-          }
-        });
-
-        // Add or update markers
-        taverns.forEach((tavern) => {
-          if (
-            typeof tavern.latitude !== "number" || isNaN(tavern.latitude) ||
-            typeof tavern.longitude !== "number" || isNaN(tavern.longitude) ||
-            tavern.latitude < 24 || tavern.latitude > 50 ||
-            tavern.longitude < -125 || tavern.longitude > -66
-          ) return;
-
-          // Remove existing marker to recreate with fresh state
-          if (markersRef.current.has(tavern.id)) {
-            markersRef.current.get(tavern.id).remove();
-          }
-
-          const isActive = activeTavernId === tavern.id;
-
-          // Build custom pin element
-          const el = document.createElement("div");
-          el.className = "dude-marker";
-          el.setAttribute("data-id", tavern.id);
-          el.style.cssText = `
-            width: ${isActive ? "42px" : "34px"};
-            height: ${isActive ? "42px" : "34px"};
-            border-radius: 50%;
-            background: ${tavern.dude_approved
-              ? (isActive ? "#f5c55a" : "#d9a54b")
-              : (isActive ? "#4a4540" : "#1e1b17")
-            };
-            border: ${isActive ? "3px" : "2px"} solid ${tavern.dude_approved ? "#f5b942" : "rgba(217,165,75,0.7)"};
-            box-shadow: ${isActive
-              ? "0 0 0 3px rgba(217,165,75,0.3), 0 4px 12px rgba(0,0,0,0.6)"
-              : "0 2px 8px rgba(0,0,0,0.5)"
-            };
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s ease;
-            position: relative;
-            font-family: system-ui, -apple-system, sans-serif;
-            font-size: ${isActive ? "12px" : "10px"};
-            font-weight: 900;
-            color: ${tavern.dude_approved ? "#1e1c1a" : "#d9a54b"};
-            z-index: ${isActive ? 10 : 1};
-          `;
-
-          el.textContent = String(tavern.stop_number || "");
-
-          // Dude Approved checkmark badge
-          if (tavern.dude_approved) {
-            const badge = document.createElement("div");
-            badge.style.cssText = `
-              position: absolute;
-              top: -5px;
-              right: -5px;
-              width: 16px;
-              height: 16px;
-              border-radius: 50%;
-              background: white;
-              border: 1.5px solid #f5b942;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-            `;
-            badge.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1a7a3c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
-            el.appendChild(badge);
-          }
-
-          // Hover effects
-          el.addEventListener("mouseenter", () => {
-            if (!isActive) {
-              el.style.transform = "scale(1.15)";
-              el.style.zIndex = "5";
-            }
-            onTavernHover(tavern.id);
-
-            if (popupRef.current) {
-              popupRef.current
-                .setLngLat([tavern.longitude, tavern.latitude])
-                .setHTML(`
-                  <div style="font-family:system-ui,sans-serif;padding:2px 0">
-                    <div style="font-weight:800;font-size:13px;color:#fff;margin-bottom:2px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tavern.name}</div>
-                    <div style="font-size:11px;color:rgba(217,165,75,0.9)">#${tavern.stop_number} · ${tavern.city}, ${tavern.state}</div>
-                  </div>
-                `)
-                .addTo(map);
-            }
-          });
-
-          el.addEventListener("mouseleave", () => {
-            if (!isActive) {
-              el.style.transform = "scale(1)";
-              el.style.zIndex = "1";
-            }
-            onTavernHover(null);
-            if (popupRef.current) popupRef.current.remove();
-          });
-
-          el.addEventListener("click", () => {
-            onTavernClick(tavern.id);
-          });
-
-          const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
-            .setLngLat([tavern.longitude, tavern.latitude])
-            .addTo(map);
-
-          markersRef.current.set(tavern.id, marker);
-        });
-
-      } catch (err) {
-        console.error("Marker update error:", err);
-      }
-    };
-
-    updateMarkers();
-  }, [taverns, activeTavernId, onTavernClick, onTavernHover]);
+    if (!mapRef.current || !mapLoadedRef.current) return;
+    const source = mapRef.current.getSource("taverns") as any;
+    if (!source) return;
+    source.setData(buildGeoJSON(taverns));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taverns, activeTavernId]);
 
   // Fly to active tavern
   useEffect(() => {
-    if (!mapRef.current || !activeTavernId) return;
+    if (!mapRef.current || !mapLoadedRef.current || !activeTavernId) return;
     const tavern = taverns.find(t => t.id === activeTavernId);
-    if (!tavern || !tavern.latitude || !tavern.longitude) return;
-
+    if (!tavern?.latitude || !tavern?.longitude) return;
     mapRef.current.flyTo({
       center: [tavern.longitude, tavern.latitude],
       zoom: Math.max(mapRef.current.getZoom(), 13),
-      duration: 800,
+      duration: 700,
       essential: true,
     });
-  }, [activeTavernId, taverns]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTavernId]);
 
   return (
     <>
       <style>{`
-        .dude-popup .mapboxgl-popup-content {
-          background: rgba(15, 13, 10, 0.97) !important;
-          border: 1px solid rgba(217,165,75,0.35) !important;
+        .mapboxgl-popup-content {
+          background: rgba(12, 10, 8, 0.97) !important;
+          border: 1px solid rgba(217,165,75,0.3) !important;
           border-radius: 4px !important;
           padding: 10px 14px !important;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.6) !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.7) !important;
+          color: white;
         }
-        .dude-popup .mapboxgl-popup-tip {
-          border-top-color: rgba(217,165,75,0.35) !important;
+        .mapboxgl-popup-tip {
+          border-top-color: rgba(12,10,8,0.97) !important;
         }
         .mapboxgl-ctrl-group {
-          background: rgba(20, 18, 14, 0.95) !important;
-          border: 1px solid rgba(217,165,75,0.25) !important;
-          border-radius: 4px !important;
+          background: rgba(18, 16, 12, 0.97) !important;
+          border: 1px solid rgba(217,165,75,0.2) !important;
+          border-radius: 3px !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
         }
         .mapboxgl-ctrl-group button {
-          background: transparent !important;
-          color: rgba(217,165,75,0.8) !important;
+          border-bottom: 1px solid rgba(217,165,75,0.15) !important;
         }
-        .mapboxgl-ctrl-group button:hover {
-          background: rgba(217,165,75,0.1) !important;
-        }
-        .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon {
-          filter: invert(1) sepia(1) saturate(3) hue-rotate(10deg) !important;
-        }
-        .mapboxgl-ctrl-attrib {
-          display: none !important;
-        }
+        .mapboxgl-ctrl-group button:last-child { border-bottom: none !important; }
+        .mapboxgl-ctrl-icon { filter: invert(0.8) sepia(0.5) saturate(2) hue-rotate(10deg) !important; }
+        .mapboxgl-ctrl-attrib { display: none !important; }
+        .mapboxgl-ctrl-logo { display: none !important; }
       `}</style>
-      <div
-        ref={mapContainerRef}
-        className={`w-full h-full ${className}`}
-        style={{ background: "#1a1710" }}
-      />
+      <div ref={containerRef} className={`w-full h-full ${className}`} />
     </>
   );
 }
