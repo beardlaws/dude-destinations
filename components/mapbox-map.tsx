@@ -105,9 +105,9 @@ export default function MapboxMap({
           paint: {
             "circle-color": [
               "step", ["get", "point_count"],
-              "#d9a54b", 5,
-              "#c4922e", 10,
-              "#b07d1a"
+              "#e8b44f", 5,
+              "#d9a54b", 10,
+              "#c4922e"
             ],
             "circle-radius": [
               "step", ["get", "point_count"],
@@ -116,8 +116,8 @@ export default function MapboxMap({
               32
             ],
             "circle-stroke-width": 2,
-            "circle-stroke-color": "#f5b942",
-            "circle-opacity": 0.92,
+            "circle-stroke-color": "#ffffff",
+            "circle-opacity": 1,
           },
         });
 
@@ -146,15 +146,15 @@ export default function MapboxMap({
           filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "dude_approved"], 0]],
           paint: {
             "circle-color": [
-              "case", ["==", ["get", "is_active"], 1], "#4a4540", "#1e1b17"
+              "case", ["==", ["get", "is_active"], 1], "#5a5248", "#2e2820"
             ],
             "circle-radius": [
               "case", ["==", ["get", "is_active"], 1], 18, 15
             ],
             "circle-stroke-width": [
-              "case", ["==", ["get", "is_active"], 1], 2.5, 1.5
+              "case", ["==", ["get", "is_active"], 1], 3, 2.5
             ],
-            "circle-stroke-color": "rgba(217,165,75,0.8)",
+            "circle-stroke-color": "#d9a54b",
             "circle-opacity": 0.95,
           },
         });
@@ -173,9 +173,9 @@ export default function MapboxMap({
               "case", ["==", ["get", "is_active"], 1], 18, 15
             ],
             "circle-stroke-width": [
-              "case", ["==", ["get", "is_active"], 1], 2.5, 1.5
+              "case", ["==", ["get", "is_active"], 1], 3, 2.5
             ],
-            "circle-stroke-color": "#f5b942",
+            "circle-stroke-color": "#ffffff",
             "circle-opacity": 0.95,
           },
         });
@@ -196,8 +196,8 @@ export default function MapboxMap({
           paint: {
             "text-color": [
               "case",
-              ["==", ["get", "dude_approved"], 1], "#1e1c1a",
-              "#d9a54b"
+              ["==", ["get", "dude_approved"], 1], "#1a1710",
+              "#ffffff"
             ],
           },
         });
