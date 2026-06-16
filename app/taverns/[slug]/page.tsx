@@ -38,13 +38,38 @@ export async function generateMetadata({ params }: TavernDetailPageProps) {
   const { slug } = await params;
   const tavern = await getTavernBySlug(slug);
   if (!tavern) return { title: "Tavern Not Found" };
+
+  const title = `${tavern.name} Review — Stop #${tavern.stop_number} | Dude Network`;
+  const description = `${tavern.short_description} Located in ${tavern.city}, ${tavern.state}. Reviewed by The Dude Network Tavern Tour.`;
+
   return {
-    title: `${tavern.name} | The Dude Network Tavern Tour`,
-    description: tavern.short_description,
+    title,
+    description,
+    keywords: [
+      tavern.name,
+      `${tavern.name} review`,
+      `${tavern.city} ${tavern.state} bar`,
+      `${tavern.city} tavern`,
+      `${tavern.county} county bar`,
+      "Ohio tavern tour",
+      "Dude Network",
+      "dude destinations",
+      ...tavern.tags,
+    ],
     openGraph: {
-      title: `${tavern.name} — Stop #${tavern.stop_number} | Dude Network Tavern Tour`,
-      description: tavern.short_description,
-      images: tavern.thumbnail ? [{ url: tavern.thumbnail }] : [],
+      title,
+      description,
+      type: "article",
+      url: `https://www.dudedestinations.com/taverns/${slug}`,
+      images: tavern.thumbnail
+        ? [{ url: tavern.thumbnail, width: 1200, height: 630, alt: `${tavern.name} — Dude Network Tavern Tour` }]
+        : [{ url: "https://www.dudedestinations.com/og-image.jpg" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: tavern.thumbnail ? [tavern.thumbnail] : ["https://www.dudedestinations.com/og-image.jpg"],
     },
   };
 }
@@ -80,6 +105,56 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
 
   return (
     <div className="min-h-screen bg-background">
+      {/* JSON-LD Schema for Google rich results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Review",
+            "name": `${tavern.name} — Dude Network Review`,
+            "description": tavern.short_description,
+            "url": `https://www.dudedestinations.com/taverns/${slug}`,
+            "author": {
+              "@type": "Organization",
+              "name": "The Dude Network",
+              "url": "https://www.dudedestinations.com",
+            },
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": tavern.rating,
+              "bestRating": 5,
+              "worstRating": 0,
+            },
+            "itemReviewed": {
+              "@type": "BarOrPub",
+              "name": tavern.name,
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": tavern.address || "",
+                "addressLocality": tavern.city,
+                "addressRegion": tavern.state,
+                "addressCountry": "US",
+              },
+              "geo": tavern.latitude && tavern.longitude ? {
+                "@type": "GeoCoordinates",
+                "latitude": tavern.latitude,
+                "longitude": tavern.longitude,
+              } : undefined,
+              "image": tavern.thumbnail || undefined,
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "The Dude Network Tavern Tour",
+              "url": "https://www.dudedestinations.com",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://www.dudedestinations.com/apple-icon.png",
+              },
+            },
+          }),
+        }}
+      />
       <SiteHeader />
       <main className="pt-20">
 
