@@ -44,10 +44,14 @@ export default function MapboxMap({
         const map = new mapboxgl.Map({
           container: mapContainerRef.current!,
           style: MAP_STYLE,
-          center: [-82.5, 40.2],
-          zoom: 6.5,
-          minZoom: 4,
+          center: [-82.5, 40.3],
+          zoom: 7.2,
+          minZoom: 5.5,
           maxZoom: 18,
+          maxBounds: [
+            [-95, 35],  // SW corner - keeps map from wandering too far
+            [-70, 47],  // NE corner
+          ],
         });
 
         mapRef.current = map;
