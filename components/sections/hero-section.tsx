@@ -26,7 +26,7 @@ export default function HeroSection() {
       <div className="absolute left-8 lg:left-16 top-1/4 bottom-1/4 w-px bg-amber/30" aria-hidden="true" />
 
       {/* Dude Approved stamp - top right */}
-      <div className="absolute top-28 right-8 lg:right-16 hidden lg:flex flex-col items-center gap-1 opacity-70 rotate-12">
+      <div className="absolute top-28 right-8 lg:right-16 hidden xl:flex flex-col items-center gap-1 opacity-60 rotate-12">
         <div className="w-20 h-20 rounded-full border-4 border-amber flex items-center justify-center">
           <div className="text-center">
             <div className="text-amber font-black text-[9px] uppercase tracking-widest leading-tight">Dude</div>
@@ -48,7 +48,7 @@ export default function HeroSection() {
         </div>
 
         {/* Headline */}
-        <h1 className="font-serif font-black leading-none text-balance mb-6">
+        <h1 className="font-serif font-black leading-none mb-6">
           <span className="block text-5xl sm:text-6xl lg:text-8xl xl:text-9xl text-white">
             The Dude
           </span>
