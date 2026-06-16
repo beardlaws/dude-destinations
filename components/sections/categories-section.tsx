@@ -1,27 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { getTaverns } from '@/lib/tavern-service';
-import FilterPill from '@/components/filter-pill';
+import { Sparkles, Landmark, Music, Home, Map, Beer, ChevronRight, Flame } from 'lucide-react';
 
 const TAVERN_CATEGORIES = [
-  { id: 'hidden-gem', label: 'Hidden Gem', icon: 'sparkles' },
-  { id: 'historic', label: 'Historic Spot', icon: 'landmark' },
-  { id: 'best-wings', label: 'Great Wings', icon: 'drumstick' },
-  { id: 'best-atmosphere', label: 'Best Atmosphere', icon: 'music' },
-  { id: 'small-town', label: 'Small Town Stop', icon: 'home' },
-  { id: 'road-trip', label: 'Road Trip Worthy', icon: 'map' },
-  { id: 'live-music', label: 'Live Music', icon: 'music' },
-  { id: 'dive-bar', label: 'Dive Bar', icon: 'beer' },
+  { id: 'Hidden Gem',       label: 'Hidden Gem',       icon: Sparkles,  desc: 'Off the beaten path, worth every mile' },
+  { id: 'Historic Spot',    label: 'Historic Spot',    icon: Landmark,  desc: 'Bars with stories baked into the walls' },
+  { id: 'Great Wings',      label: 'Great Wings',      icon: Flame,     desc: 'Pull over for the food alone' },
+  { id: 'Best Atmosphere',  label: 'Best Atmosphere',  icon: Music,     desc: 'The vibe hits different here' },
+  { id: 'Small Town Stop',  label: 'Small Town Stop',  icon: Home,      desc: 'Blink and you\'ll miss it — don\'t' },
+  { id: 'Road Trip Worthy', label: 'Road Trip Worthy', icon: Map,       desc: 'Worth adding miles to your route' },
+  { id: 'Live Music',       label: 'Live Music',       icon: Music,     desc: 'Cold beer and a live set' },
+  { id: 'Dive Bar',         label: 'Dive Bar',         icon: Beer,      desc: 'Proud of it. You should be too.' },
 ];
 
 export default function CategoriesSection() {
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  const toggleFilter = (id: string) => {
-    setActiveFilters((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
-    );
+  const handleCategoryClick = (categoryId: string) => {
+    const newActive = activeCategory === categoryId ? null : categoryId;
+    setActiveCategory(newActive);
+
+    // Scroll to the map section and trigger filter
+    const mapSection = document.getElementById('dude-destination');
+    if (mapSection) {
+      mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Dispatch custom event for map-section to pick up the filter
+      if (newActive) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('dude-filter-category', {
+            detail: { category: newActive }
+          }));
+        }, 600); // wait for scroll to complete
+      } else {
+        window.dispatchEvent(new CustomEvent('dude-filter-category', {
+          detail: { category: null }
+        }));
+      }
+    }
   };
 
   return (
@@ -31,78 +48,87 @@ export default function CategoriesSection() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-12">
           <p className="text-xs font-bold tracking-[0.3em] uppercase text-amber mb-3">
             Browse by Category
           </p>
-          <h2 className="font-serif text-3xl lg:text-4xl font-black text-foreground">
+          <h2 className="font-serif text-3xl lg:text-4xl font-black text-foreground mb-3">
             Find Your Kind of Stop
           </h2>
-          <p className="text-muted-foreground mt-2 max-w-md mx-auto leading-relaxed">
-            Not all taverns are created equal. Filter by what matters most to you.
+          <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+            Not all taverns are created equal. Pick a vibe and we'll take you straight to the map.
           </p>
         </div>
 
-        {/* Filter pills */}
-        <div className="flex flex-wrap gap-3 justify-center">
-          {TAVERN_CATEGORIES.map((cat) => (
-            <FilterPill
-              key={cat.id}
-              id={cat.id}
-              label={cat.label}
-              icon={cat.icon}
-              active={activeFilters.includes(cat.id)}
-              onClick={toggleFilter}
-            />
-          ))}
-        </div>
-
-        {/* Active filter summary */}
-        {activeFilters.length > 0 && (
-          <div className="mt-8 text-center">
-            <p className="text-sm text-muted-foreground mb-3">
-              Filtering by{' '}
-              <span className="text-amber font-semibold">
-                {activeFilters.length}{' '}
-                {activeFilters.length === 1 ? 'category' : 'categories'}
-              </span>
-            </p>
-            <button
-              onClick={() => setActiveFilters([])}
-              className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-border px-4 py-2 rounded-sm hover:border-amber/40 transition-colors"
-            >
-              Clear Filters
-            </button>
-          </div>
-        )}
-
-        {/* Visual grid of categories (decorative) */}
-        <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {TAVERN_CATEGORIES.slice(0, 4).map((cat) => {
+        {/* Category grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {TAVERN_CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            const isActive = activeCategory === cat.id;
             return (
               <button
                 key={cat.id}
-                onClick={() => toggleFilter(cat.id)}
-                className={`relative overflow-hidden rounded-sm border p-6 text-center transition-all duration-200 ${
-                  activeFilters.includes(cat.id)
-                    ? 'border-amber bg-amber/10'
-                    : 'border-border bg-card hover:border-amber/40 hover:bg-secondary'
+                onClick={() => handleCategoryClick(cat.id)}
+                className={`group relative overflow-hidden rounded-sm border p-5 text-left transition-all duration-200 ${
+                  isActive
+                    ? 'border-amber bg-amber/10 shadow-lg shadow-amber/10'
+                    : 'border-border bg-card hover:border-amber/50 hover:bg-secondary'
                 }`}
               >
-                <p
-                  className={`text-sm font-bold tracking-wide ${
-                    activeFilters.includes(cat.id) ? 'text-amber' : 'text-foreground'
-                  }`}
-                >
+                {/* Icon */}
+                <div className={`w-9 h-9 rounded-sm flex items-center justify-center mb-3 transition-colors ${
+                  isActive ? 'bg-amber text-darker-wood' : 'bg-muted/50 text-muted-foreground group-hover:bg-amber/20 group-hover:text-amber'
+                }`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+
+                {/* Label */}
+                <p className={`text-sm font-bold tracking-wide leading-tight mb-1 ${
+                  isActive ? 'text-amber' : 'text-foreground'
+                }`}>
                   {cat.label}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Browse stops
+
+                {/* Desc */}
+                <p className="text-xs text-muted-foreground leading-snug">
+                  {cat.desc}
                 </p>
+
+                {/* Active indicator */}
+                {isActive && (
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 rounded-full bg-amber" />
+                  </div>
+                )}
+
+                {/* Arrow on hover */}
+                <div className={`flex items-center gap-1 mt-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+                  isActive ? 'text-amber' : 'text-muted-foreground/0 group-hover:text-amber/70'
+                }`}>
+                  <span>{isActive ? 'Viewing on map' : 'Show on map'}</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
               </button>
             );
           })}
         </div>
+
+        {/* Active state note */}
+        {activeCategory && (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Scrolling to map and filtering by{' '}
+              <span className="text-amber font-bold">{activeCategory}</span>
+              {' '}—{' '}
+              <button
+                onClick={() => handleCategoryClick(activeCategory)}
+                className="text-muted-foreground underline hover:text-foreground transition-colors"
+              >
+                clear filter
+              </button>
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
