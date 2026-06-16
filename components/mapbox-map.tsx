@@ -64,7 +64,7 @@ export default function MapboxMap({
 
       const map = new mapboxgl.Map({
         container: containerRef.current!,
-        style: "mapbox://styles/mapbox/dark-v11",
+        style: "mapbox://styles/dudedestinations/cmqgsbas4009v01s49bpnal7e",
         center: [-82.5, 40.3],
         zoom: 7,
         minZoom: 4,
