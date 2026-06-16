@@ -18,7 +18,7 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'The Dude Network Tavern Tour | Ohio Taverns, Cold Drinks, Local Legends',
+  title: 'The Dude Network Tavern Tour | Ohio Tavern Reviews',
   description:
     'Ohio taverns, cold drinks, local legends, and the stories worth stopping for. Follow our growing map of tavern reviews across Ohio.',
   keywords: [
