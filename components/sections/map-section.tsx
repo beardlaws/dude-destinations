@@ -17,9 +17,11 @@ import {
   Compass,
   Navigation,
   Youtube,
+  Facebook,
   ChevronRight,
   Route,
   Settings,
+  Shuffle,
 } from "lucide-react";
 import { SUPPORTED_STATES, STATE_NAMES } from "@/lib/map-utils";
 import DudeApprovedBadge, { DudeApprovedIndicator } from "@/components/dude-approved-badge";
@@ -93,6 +95,23 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [rouletteOpen, setRouletteOpen] = useState(false);
+  const [rouletteTavern, setRouletteTavern] = useState<Tavern | null>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  // Road Trip Roulette
+  const spinRoulette = () => {
+    const pool = taverns.filter((t) => t.dude_approved);
+    if (!pool.length) return;
+    setRouletteOpen(true);
+    setIsSpinning(true);
+    setRouletteTavern(null);
+    setTimeout(() => {
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      setRouletteTavern(pick);
+      setIsSpinning(false);
+    }, 1800);
+  };
 
   // Get user location
   const getUserLocation = () => {
@@ -169,16 +188,6 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
       activeEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [activeTavernId]);
-
-  // Listen for category filter events from CategoriesSection
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setActiveFilter(customEvent.detail.category);
-    };
-    window.addEventListener('dude-filter-category', handler);
-    return () => window.removeEventListener('dude-filter-category', handler);
-  }, []);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -283,6 +292,25 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
               </Link>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Road Trip Roulette Bar */}
+      <div className="border-b border-amber/20 bg-amber/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground hidden sm:block">
+            Can&apos;t decide where to drink next?
+          </p>
+          <button
+            onClick={spinRoulette}
+            className="group flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-amber to-amber-bright text-darker-wood font-black uppercase tracking-wider text-xs rounded-sm hover:shadow-lg hover:shadow-amber/30 transition-all hover:scale-105 ml-auto"
+          >
+            <div className="w-5 h-5 relative overflow-hidden rounded-full border border-darker-wood/20 flex-shrink-0">
+              <Image src="/images/dude-network-logo.png" alt="" fill className="object-cover group-hover:animate-spin" />
+            </div>
+            Road Trip Roulette
+            <Shuffle className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
@@ -774,6 +802,123 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
           </div>
         )}
       </div>
+
+      {/* Road Trip Roulette Modal */}
+      {rouletteOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setRouletteOpen(false)}>
+          <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md bg-darker-wood border border-amber/40 rounded-sm overflow-hidden shadow-2xl shadow-amber/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber to-amber-bright px-5 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Shuffle className="w-4 h-4 text-darker-wood" />
+                <span className="font-black text-darker-wood uppercase tracking-widest text-xs">Road Trip Roulette</span>
+              </div>
+              <button onClick={() => setRouletteOpen(false)} className="text-darker-wood/60 hover:text-darker-wood transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {isSpinning ? (
+              <div className="p-14 flex flex-col items-center gap-5">
+                {/* Spinning Dude Network Logo */}
+                <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-amber animate-spin shadow-lg shadow-amber/30">
+                  <Image src="/images/dude-network-logo.png" alt="Spinning" fill className="object-cover" />
+                </div>
+                <div className="text-center">
+                  <p className="text-amber font-black uppercase tracking-widest text-sm">Picking your stop...</p>
+                  <p className="text-muted-foreground text-xs mt-1">Hold tight, Dude</p>
+                </div>
+              </div>
+            ) : rouletteTavern ? (
+              <>
+                <div className="relative aspect-video">
+                  <Image
+                    src={rouletteTavern.thumbnail || "/images/tavern-placeholder.jpg"}
+                    alt={rouletteTavern.name}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-darker-wood via-darker-wood/20 to-transparent" />
+                  <div className="absolute top-3 left-3 px-2.5 py-1 bg-amber text-darker-wood text-xs font-black uppercase tracking-wider rounded-sm">
+                    Stop #{rouletteTavern.stop_number}
+                  </div>
+                  {rouletteTavern.dude_approved && (
+                    <div className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-amber to-amber-bright text-darker-wood text-[10px] font-black rounded-sm">
+                      ✓ DUDE APPROVED
+                    </div>
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-serif text-2xl font-black text-foreground mb-1">{rouletteTavern.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                    <MapPin className="w-3.5 h-3.5 text-amber" />
+                    <span>{rouletteTavern.city}, {rouletteTavern.state}</span>
+                    {rouletteTavern.rating > 0 && (
+                      <>
+                        <span>·</span>
+                        <Star className="w-3.5 h-3.5 fill-amber text-amber" />
+                        <span>{rouletteTavern.rating.toFixed(1)}</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-2">
+                    {rouletteTavern.short_description}
+                  </p>
+                  {rouletteTavern.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {rouletteTavern.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="px-2 py-0.5 bg-amber/10 text-amber text-xs font-semibold rounded-sm border border-amber/20">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2.5 mb-3">
+                    <Link
+                      href={`/taverns/${rouletteTavern.slug}`}
+                      onClick={() => setRouletteOpen(false)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber text-darker-wood font-black text-xs uppercase tracking-wider rounded-sm hover:bg-amber-bright transition-colors"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                      Full Story
+                    </Link>
+                    {rouletteTavern.video_url && (
+                      <a
+                        href={rouletteTavern.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-4 py-2.5 border border-border text-muted-foreground text-xs font-bold uppercase tracking-wider rounded-sm hover:border-amber/50 hover:text-foreground transition-colors"
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                        Watch
+                      </a>
+                    )}
+                    <button
+                      onClick={() => {
+                        setActiveTavernId(rouletteTavern.id);
+                        setRouletteOpen(false);
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2.5 border border-border text-muted-foreground text-xs font-bold uppercase tracking-wider rounded-sm hover:border-amber/50 hover:text-foreground transition-colors"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      Map
+                    </button>
+                  </div>
+                  <button
+                    onClick={spinRoulette}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border border-amber/30 text-amber text-xs font-black uppercase tracking-widest rounded-sm hover:bg-amber/10 transition-colors"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" />
+                    Spin Again
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
