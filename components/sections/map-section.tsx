@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { SUPPORTED_STATES, STATE_NAMES } from "@/lib/map-utils";
 import DudeApprovedBadge, { DudeApprovedIndicator } from "@/components/dude-approved-badge";
-import { MultiStateMapSVG } from "@/components/multi-state-map-svg";
+import MapboxMap from "@/components/mapbox-map";
 import type { Tavern } from "@/lib/tavern-service";
 
 // Tavern categories for filtering
@@ -449,19 +449,17 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
               <div className="flex flex-wrap gap-2">
                 {tavernCategories.map((cat) => (
                   <button
-                    key={cat.id}
+                    key={cat}
                     onClick={() =>
-                      setActiveFilter(
-                        activeFilter === cat.label ? null : cat.label
-                      )
+                      setActiveFilter(activeFilter === cat ? null : cat)
                     }
                     className={`px-4 py-2 rounded-sm text-sm font-semibold transition-all border ${
-                      activeFilter === cat.label
+                      activeFilter === cat
                         ? "bg-amber border-amber text-darker-wood"
                         : "bg-background/30 border-border/50 text-muted-foreground hover:border-amber/50 hover:text-foreground"
                     }`}
                   >
-                    {cat.label}
+                    {cat}
                   </button>
                 ))}
               </div>
@@ -493,15 +491,11 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
             aria-hidden="true"
           />
 
-          {/* Multi-state map SVG with pins */}
+          {/* Mapbox map */}
           <div className="absolute inset-0">
-            <MultiStateMapSVG
-              activeState={activeState === "All States" ? null : activeState}
-              onStateClick={(state) => setActiveState(state === activeState ? "All States" : state)}
-              highlightedStates={statesWithTaverns}
+            <MapboxMap
               taverns={filteredTaverns}
               activeTavernId={activeTavernId}
-              hoveredPinId={hoveredPinId}
               onTavernClick={setActiveTavernId}
               onTavernHover={setHoveredPinId}
             />
@@ -783,3 +777,4 @@ export default function MapSection({ taverns, stats, regions }: MapSectionProps)
     </section>
   );
 }
+
