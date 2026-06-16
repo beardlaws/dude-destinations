@@ -27,7 +27,7 @@ export default async function HomePage() {
         <HeroSection />
         <StatsBar stats={stats} />
         <MapSection taverns={taverns} stats={stats} regions={regions} />
-        <FeaturedTaverns taverns={taverns} />
+        <FeaturedTaverns taverns={taverns} dudeApprovedCount={stats.dudeApprovedCount} />
         <VideoReviewsSection />
         <CategoriesSection taverns={taverns} />
         <SubmitSection />
