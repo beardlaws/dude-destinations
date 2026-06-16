@@ -62,7 +62,7 @@ interface MultiStateMapSVGProps {
 
 // Cluster radius scales aggressively with zoom so pins split apart quickly
 function clusterTaverns(taverns: Tavern[], zoom: number) {
-  const radius = 0.6 / zoom; // tighter than before — splits at lower zoom level
+  const radius = 0.35 / zoom; // tighter than before — splits at lower zoom level
 
   const visited = new Set<string>();
   const clusters: { taverns: Tavern[]; lon: number; lat: number }[] = [];
@@ -130,7 +130,7 @@ function MultiStateMapSVGComponent({
   const activeClusterIdx = clusters.findIndex(c => c.taverns.some(t => t.id === activeTavernId));
 
   // Pin size scales with zoom — small dots at low zoom, readable at high zoom
-  const pinScale = Math.min(1, Math.max(0.45, zoom * 0.28));
+  const pinScale = Math.min(1, Math.max(0.18, zoom * 0.14));
 
   return (
     <div className={`relative w-full h-full ${className}`}>
@@ -282,7 +282,7 @@ function MultiStateMapSVGComponent({
 
             // --- CLUSTER BUBBLE ---
             if (!isSingle) {
-              const r = 7 * pinScale;
+              const r = 5.5 * pinScale;
               const fontSize = Math.max(4, 6 * pinScale);
               return (
                 <Marker
@@ -345,8 +345,8 @@ function MultiStateMapSVGComponent({
 
             // --- SINGLE PIN ---
             // Dot size scales with zoom — tiny at zoom 1, full size at zoom 4+
-            const dotR   = Math.max(3.5, 8 * pinScale);
-            const isLargeEnough = dotR > 5.5;
+            const dotR   = Math.max(2.5, 6 * pinScale);
+            const isLargeEnough = dotR > 4.5;
 
             return (
               <Marker
