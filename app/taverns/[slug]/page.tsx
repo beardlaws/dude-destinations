@@ -273,14 +273,22 @@ export default async function TavernDetailPage({ params }: TavernDetailPageProps
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       />
                     ) : isFacebook ? (
-                      <iframe
-                        src={getEmbedUrl(tavern.video_url, "facebook")}
-                        title={tavern.video_title || tavern.name}
-                        className="w-full h-full border-0"
-                        allowFullScreen
-                        loading="lazy"
-                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                      />
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-card to-muted p-8">
+                        <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
+                          <Facebook className="w-8 h-8 text-blue-400" />
+                        </div>
+                        <p className="text-lg font-semibold text-foreground mb-2 text-center">{tavern.video_title || tavern.name}</p>
+                        <p className="text-sm text-muted-foreground mb-6 text-center">Facebook videos open directly on Facebook</p>
+                        <a
+                          href={tavern.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-[#1877F2] text-white font-bold rounded-sm hover:bg-[#1664d9] transition-all"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Watch on Facebook
+                        </a>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-card to-muted p-8">
                         <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-6">
