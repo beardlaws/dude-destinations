@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { Play, Map } from "lucide-react";
+import type { TavernStats } from "@/lib/tavern-service";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  stats: TavernStats;
+}
+
+export default function HeroSection({ stats }: HeroSectionProps) {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -26,7 +31,7 @@ export default function HeroSection() {
       <div className="absolute left-8 lg:left-16 top-1/4 bottom-1/4 w-px bg-amber/30" aria-hidden="true" />
 
       {/* Dude Approved stamp - top right */}
-      <div className="absolute top-28 right-8 lg:right-16 hidden xl:flex flex-col items-center gap-1 opacity-60 rotate-12">
+      <div className="absolute top-28 right-8 lg:right-16 hidden lg:flex flex-col items-center gap-1 opacity-70 rotate-12">
         <div className="w-20 h-20 rounded-full border-4 border-amber flex items-center justify-center">
           <div className="text-center">
             <div className="text-amber font-black text-[9px] uppercase tracking-widest leading-tight">Dude</div>
@@ -48,7 +53,7 @@ export default function HeroSection() {
         </div>
 
         {/* Headline */}
-        <h1 className="font-serif font-black leading-none mb-6">
+        <h1 className="font-serif font-black leading-none text-balance mb-6">
           <span className="block text-5xl sm:text-6xl lg:text-8xl xl:text-9xl text-white">
             The Dude
           </span>
@@ -72,17 +77,16 @@ export default function HeroSection() {
           Real bars. Real people. Real cold beer.
         </p>
         <p className="text-base text-white/55 max-w-xl mx-auto leading-relaxed mb-12">
-          We hit the road so you know where to drink. 78 stops, 9 states, zero pretentious cocktail bars — 
-          just the places worth pulling over for.
+          We hit the road so you know where to drink. {stats.totalStops} stops, {stats.statesCovered} states, zero pretentious cocktail bars — just the places worth pulling over for.
         </p>
 
         {/* Stats strip */}
         <div className="flex items-center justify-center gap-6 sm:gap-10 mb-12">
           {[
-            { value: "78", label: "Stops" },
-            { value: "9", label: "States" },
-            { value: "40", label: "Counties" },
-            { value: "4,200+", label: "Miles" },
+            { value: String(stats.totalStops), label: "Stops" },
+            { value: String(stats.statesCovered), label: "States" },
+            { value: String(stats.countiesCovered), label: "Counties" },
+            { value: stats.milesTraveled, label: "Miles" },
           ].map(({ value, label }) => (
             <div key={label} className="text-center">
               <div className="text-2xl sm:text-3xl font-black text-amber leading-none">{value}</div>
