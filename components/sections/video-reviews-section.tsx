@@ -37,19 +37,6 @@ function FeaturedVideoCard({ tavern }: { tavern: Tavern }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-        {/* Play button */}
-        <Link
-          href={tavern.video_url || "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute inset-0 flex items-center justify-center"
-          aria-label={`Watch ${tavern.name} review on ${platformLabel}`}
-        >
-          <div className="w-16 h-16 rounded-full bg-amber/90 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg shadow-black/40">
-            <Play className="w-7 h-7 fill-darker-wood text-darker-wood ml-1" />
-          </div>
-        </Link>
-
         {/* Platform badge */}
         <div
           className={`absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-xs font-bold ${platformColor}`}
