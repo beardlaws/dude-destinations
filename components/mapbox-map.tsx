@@ -81,6 +81,13 @@ export default function MapboxMap({
         if (cancelled) return;
         mapLoadedRef.current = true;
 
+        // Load Dude Network logo for pins
+        map.loadImage("/images/dude-network-logo.png", (error: any, image: any) => {
+          if (!error && image) {
+            map.addImage("dude-logo", image, { sdf: false });
+          }
+        });
+
         // GeoJSON source — no clustering
         map.addSource("taverns", {
           type: "geojson",
@@ -118,6 +125,19 @@ export default function MapboxMap({
         });
 
 
+
+        // Dude Network logo on each pin
+        map.addLayer({
+          id: "pin-logo",
+          type: "symbol",
+          source: "taverns",
+          layout: {
+            "icon-image": "dude-logo",
+            "icon-size": ["interpolate", ["linear"], ["zoom"], 5, 0.06, 10, 0.1, 14, 0.14],
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+          },
+        });
 
         // Active pulse ring
         map.addLayer({
