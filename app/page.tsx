@@ -24,10 +24,10 @@ export default async function HomePage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main>
-        <HeroSection />
+        <HeroSection stats={stats} />
         <StatsBar stats={stats} />
         <MapSection taverns={taverns} stats={stats} regions={regions} />
-        <FeaturedTaverns taverns={taverns} dudeApprovedCount={stats.dudeApprovedCount} />
+        <FeaturedTaverns taverns={taverns} />
         <VideoReviewsSection />
         <CategoriesSection taverns={taverns} />
         <SubmitSection />
